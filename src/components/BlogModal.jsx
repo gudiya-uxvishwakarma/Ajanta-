@@ -123,7 +123,6 @@ export default function BlogModal({ post, onClose }) {
             className="w-full h-full object-cover object-top"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-
           {/* Close Button */}
           <button
             onClick={onClose}
@@ -134,6 +133,7 @@ export default function BlogModal({ post, onClose }) {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
+          
 
           {/* Category + Title overlay */}
           <div className="absolute bottom-0 left-0 p-6">

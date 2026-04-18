@@ -1,727 +1,603 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { allProducts } from "../data/products";
+import heroVideo from "../assets/198866-908874705.mp4";
+import heroVideo2 from "../assets/6500-192502235.mp4";
+import heroVideo3 from "../assets/43613-436237593.mp4";
+import slide1 from "../assets/cor1.jpg";
+import slide2 from "../assets/cor2.jpg";
+import slide3 from "../assets/cor3.jpg";
+import catTorch   from "../assets/handtorch.jpg";
+import catClock   from "../assets/cl1.png";
+import catLed     from "../assets/led.jpg";
+import catFans    from "../assets/fans.jpg";
+import catEmLight from "../assets/hm1.jpg";
+import catHeater  from "../assets/hma7.jpg";
+import catIron    from "../assets/hma14.jpg";
+import catKettle  from "../assets/hma9.jfif";
+import catKitchen from "../assets/hma11.jpg";
+import catMosq    from "../assets/hma6.jpg";
 
-const allRelated = [
-  { img: "/image copy 15.png", title: "Ajanta Quartz Black Dial Silver Watch", price: "₹ 2,733.00", old_price: "₹ 4,795.00", tag: "SALE -43%" },
-  { img: "/image copy 16.png", title: "Ajanta Quartz Silver Analog Watch", price: "₹ 2,733.00", old_price: "₹ 4,795.00", tag: "SALE -43%" },
-  { img: "/image copy 17.png", title: "Ajanta Men's Green Dial Silicone Strap", price: "₹ 2,252.00", old_price: "₹ 3,500.00", tag: "SALE -35%" },
-  { img: "/image copy 18.png", title: "Ajanta Classic Black Stainless Steel", price: "₹ 2,534.00", old_price: "₹ 2,695.00", tag: "SALE -5%" },
-  { img: "/image copy 19.png", title: "Ajanta Men's Black Dial Tan Strap", price: "₹ 2,252.00", old_price: "₹ 3,500.00", tag: "SALE -35%" },
-  { img: "/image copy 20.png", title: "Ajanta Grey Mesh Ultra-Slim Watch", price: "₹ 2,516.00", old_price: "₹ 3,500.00", tag: "SALE -28%" },
-  { img: "/image copy 21.png", title: "Ajanta Noor Rose Gold Pearl Dial", price: "₹ 2,394.00", old_price: "₹ 3,800.00", tag: "SALE -37%" },
-  { img: "/image copy 22.png", title: "Ajanta Noor Silver Bracelet Watch", price: "₹ 2,650.00", old_price: "₹ 4,200.00", tag: "SALE -37%" },
-  { img: "/image copy 23.png", title: "Ajanta Rose Gold Square Dial Watch", price: "₹ 2,755.00", old_price: "₹ 4,500.00", tag: "SALE -39%" },
-  { img: "/image copy 24.png", title: "Ajanta Noor Champagne Mesh Bracelet", price: "₹ 2,534.00", old_price: "₹ 3,900.00", tag: "SALE -35%" },
-];
+const CATEGORY_CONFIG = {
+  "Hand Torch":               { filter: "hand-torch",        img: catTorch,   sub: "Powerful & Portable"    },
+  "Clock":                    { filter: "clock",             img: catClock,   sub: "Precision Timekeeping"  },
+  "Emergency Light":          { filter: "emergency-light",   img: catEmLight, sub: "Always Ready"           },
+  "Home Appliance":           { filter: "home-appliance",    img: catFans,    sub: "Built for Everyday"     },
+  "LED":                      { filter: "led",               img: catLed,     sub: "Bright & Efficient"     },
+  "Room Heater":              { filter: "room-heater",       img: catHeater,  sub: "Stay Warm"              },
+  "Iron":                     { filter: "iron",              img: catIron,    sub: "Smooth & Precise"       },
+  "Electric Kettle":          { filter: "electric-kettle",   img: catKettle,  sub: "Quick Boil"             },
+  "Kitchen Appliance":        { filter: "kitchen-appliance", img: catKitchen, sub: "Cook Smarter"           },
+  "Electric Mosquito Racket": { filter: "mosquito-racket",   img: catMosq,    sub: "Protect Your Home"      },
+};
 
-function ProductDrawer({ product, onClose }) {
-  const [qty, setQty] = useState(1);
-  const [activeImg, setActiveImg] = useState(product?.img);
+const dynamicCategories = [...new Set(allProducts.map(p => p.category))]
+  .filter(c => CATEGORY_CONFIG[c])
+  .map(c => ({
+    label: c,
+    sub:   CATEGORY_CONFIG[c].sub,
+    to:    `/shop?filter=${CATEGORY_CONFIG[c].filter}`,
+    img:   CATEGORY_CONFIG[c].img,
+    count: allProducts.filter(p => p.category === c).length,
+  }));
 
-  useEffect(() => {
-    if (product) {
-      setActiveImg(product.img);
-      setQty(1);
-      document.body.style.overflow = "hidden";
-    }
-    return () => { document.body.style.overflow = ""; };
-  }, [product]);
-
-  if (!product) return null;
-
-  const related = allRelated.filter(r => r.img !== product.img).slice(0, 6);
-  const thumbs = [product.img, product.hoverImg].filter(Boolean);
-
-  return (
-    <>
-      {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/50 z-[100]" onClick={onClose} />
-
-      {/* Drawer */}
-      <div className="fixed right-0 top-0 h-full w-full max-w-[560px] bg-white z-[101] flex flex-col shadow-2xl overflow-y-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 sticky top-0 bg-white z-10">
-          <p className="text-[12px] font-bold tracking-widest uppercase text-gray-500">Product Details</p>
-          <button onClick={onClose} className="w-8 h-8 flex items-center justify-center hover:bg-gray-100 rounded-full transition-colors">
-            <svg fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24" width="18" height="18">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-0 flex-1">
-          {/* Top — image + details */}
-          <div className="flex flex-col md:flex-row gap-0">
-            {/* Images */}
-            <div className="flex flex-col gap-2 p-4 md:w-[52%]">
-              <div className="w-full aspect-square bg-[#f5f5f5] rounded-xl overflow-hidden">
-                <img src={activeImg} alt={product.title} className="w-full h-full object-cover object-top" />
-              </div>
-              {thumbs.length > 1 && (
-                <div className="flex gap-2">
-                  {thumbs.map((t, i) => (
-                    <button key={i} onClick={() => setActiveImg(t)}
-                      className={`w-16 h-16 rounded-lg overflow-hidden border-2 transition-all ${activeImg === t ? "border-[#1a1a1a]" : "border-transparent"}`}>
-                      <img src={t} alt="" className="w-full h-full object-cover object-top" />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Details */}
-            <div className="flex flex-col gap-4 p-5 md:p-6 flex-1">
-              {product.tag && (
-                <span className="bg-[#cc0000] text-white text-[10px] font-bold px-2.5 py-1 rounded w-fit tracking-wide">{product.tag}</span>
-              )}
-              <h2 className="text-[15px] font-bold text-[#1a1a1a] leading-snug">{product.title}</h2>
-
-              <div className="flex items-center gap-3">
-                <span className="text-[#cc0000] font-black text-[22px]">{product.price}</span>
-                {product.old_price && <span className="text-gray-400 text-[14px] line-through">{product.old_price}</span>}
-              </div>
-
-              {/* Features */}
-              <div className="flex flex-col gap-1.5 text-[12.5px] text-gray-500 border-t border-gray-100 pt-4">
-                {[
-                  "Quartz Movement — High Accuracy",
-                  "Stainless Steel Case & Strap",
-                  "Water Resistant up to 30m",
-                  "Day & Date Display",
-                  "1 Year Manufacturer Warranty",
-                ].map(f => (
-                  <div key={f} className="flex items-center gap-2">
-                    <svg className="w-3.5 h-3.5 text-[#cc0000] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                    </svg>
-                    {f}
-                  </div>
-                ))}
-              </div>
-
-              {/* Qty */}
-              <div className="flex items-center gap-3 border-t border-gray-100 pt-4">
-                <span className="text-[12px] text-gray-500 font-medium">Qty:</span>
-                <div className="flex items-center border border-gray-200 rounded-lg overflow-hidden">
-                  <button onClick={() => setQty(q => Math.max(1, q - 1))} className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 text-lg font-bold transition-colors">−</button>
-                  <span className="w-10 text-center text-[14px] font-semibold">{qty}</span>
-                  <button onClick={() => setQty(q => q + 1)} className="w-9 h-9 flex items-center justify-center hover:bg-gray-100 text-lg font-bold transition-colors">+</button>
-                </div>
-              </div>
-
-              {/* Buttons */}
-              <div className="flex flex-col gap-2 pt-1">
-                {product.soldOut ? (
-                  <button disabled className="w-full bg-gray-300 text-gray-500 py-3.5 text-[11px] font-bold tracking-widest uppercase rounded-lg cursor-not-allowed">SOLD OUT</button>
-                ) : (
-                  <button className="w-full bg-[#1a1a1a] text-white py-3.5 text-[11px] font-bold tracking-widest uppercase rounded-lg hover:bg-[#cc0000] transition-colors">ADD TO CART</button>
-                )}
-                <button className="w-full border border-gray-200 text-[#1a1a1a] py-3 text-[11px] font-bold tracking-widest uppercase rounded-lg hover:border-gray-400 transition-colors">VIEW FULL DETAILS</button>
-              </div>
-
-              {/* Trust badges */}
-              <div className="flex items-center gap-4 pt-2 border-t border-gray-100">
-                {[["🚚", "Free Shipping"], ["↩️", "7 Day Returns"], ["🛡️", "1 Yr Warranty"]].map(([icon, label]) => (
-                  <div key={label} className="flex flex-col items-center gap-0.5 flex-1">
-                    <span className="text-[16px]">{icon}</span>
-                    <span className="text-[10px] text-gray-400 text-center">{label}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Related Products */}
-          <div className="border-t border-gray-100 px-5 py-6">
-            <p className="text-[12px] font-bold tracking-widest uppercase text-gray-700 mb-4">You May Also Like</p>
-            <div className="grid grid-cols-3 gap-3">
-              {related.map((r, i) => (
-                <div key={i} className="flex flex-col cursor-pointer group" onClick={() => { setActiveImg(r.img); setQty(1); }}>
-                  <div className="w-full aspect-square bg-[#f5f5f5] rounded-lg overflow-hidden mb-2">
-                    <img src={r.img} alt={r.title} className="w-full h-full object-cover object-top transition-transform duration-300 group-hover:scale-105" />
-                  </div>
-                  <p className="text-[11px] text-gray-700 leading-snug line-clamp-2 mb-1">{r.title}</p>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-[#cc0000] font-bold text-[12px]">{r.price}</span>
-                    <span className="text-gray-400 text-[10px] line-through">{r.old_price}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </div>
-    </>
-  );
-}
-
-
-const mensProducts = allProducts.filter(p => p.category === "Men's");
-const noorProducts = allProducts.filter(p => p.category === "Noor");
-
-function ProductCard({ card, onQuickShop }) {
-  const [hovered, setHovered] = useState(false);
-  const [wishlisted, setWishlisted] = useState(false);
-  const navigate = useNavigate();
-
-  return (
-    <div
-      className="flex flex-col cursor-pointer text-left group"
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      onClick={() => { navigate(`/product/${card.id}`); window.scrollTo(0, 0); }}
-    >
-      {/* Image Box */}
-      <div className="relative w-full aspect-[3/4] bg-[#f5f4f2] overflow-hidden rounded-2xl mb-3 shadow-sm transition-shadow duration-300 group-hover:shadow-lg">
-        {/* Product images with crossfade */}
-        <img
-          src={card.img}
-          alt={card.title}
-          className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-500"
-          style={{ opacity: hovered ? 0 : 1, transform: hovered ? "scale(1.04)" : "scale(1)" }}
-        />
-        <img
-          src={card.hoverImg || card.img}
-          alt={card.title}
-          className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-500"
-          style={{ opacity: hovered ? 1 : 0, transform: hovered ? "scale(1.04)" : "scale(1)" }}
-        />
-
-        {/* Subtle gradient at bottom */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/10 via-transparent to-transparent pointer-events-none" />
-
-        {/* Sale badge */}
-        {card.tag && (
-          <span className="absolute top-3 left-3 z-10 bg-[#cc0000] text-white text-[9.5px] font-bold px-2 py-1 rounded-full tracking-wide shadow">
-            {card.tag}
-          </span>
-        )}
-
-        {/* Sold out badge */}
-        {card.soldOut && (
-          <span className="absolute top-3 left-3 z-10 bg-gray-800/80 text-white text-[9.5px] font-bold px-2 py-1 rounded-full tracking-wide">
-            SOLD OUT
-          </span>
-        )}
-
-        {/* Wishlist button */}
-        <button
-          className="absolute top-3 right-3 z-10 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md transition-all duration-300 hover:scale-110"
-          style={{ opacity: hovered || wishlisted ? 1 : 0 }}
-          aria-label="Add to wishlist"
-          onClick={(e) => { e.stopPropagation(); setWishlisted(w => !w); }}
-        >
-          <svg fill={wishlisted ? "#cc0000" : "none"} stroke={wishlisted ? "#cc0000" : "#555"} strokeWidth="1.8" viewBox="0 0 24 24" width="14" height="14">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-          </svg>
-        </button>
-
-        {/* Quick shop CTA */}
-        <div
-          className="absolute bottom-0 left-0 right-0 z-10 transition-all duration-300"
-          style={{ opacity: hovered ? 1 : 0, transform: hovered ? "translateY(0)" : "translateY(8px)" }}
-        >
-          <button
-            className="w-full bg-[#1a1a1a]/90 backdrop-blur-sm text-white text-[10.5px] font-bold tracking-widest uppercase py-3 hover:bg-[#cc0000] transition-colors rounded-b-2xl"
-            onClick={(e) => { e.stopPropagation(); navigate(`/product/${card.id}`); window.scrollTo(0, 0); }}
-          >
-            {card.soldOut ? "VIEW DETAILS" : "QUICK SHOP"}
-          </button>
-        </div>
-      </div>
-
-      {/* Card Info */}
-      <div className="flex flex-col gap-1 px-0.5">
-        {/* SKU */}
-        {card.sku && (
-          <p className="text-[10px] text-gray-400 tracking-wide uppercase">{card.sku}</p>
-        )}
-
-        {/* Title */}
-        <p className="text-[12.5px] font-medium text-gray-800 leading-[1.45] line-clamp-2">{card.title}</p>
-
-        {/* Price row */}
-        <div className="flex items-center gap-2 mt-0.5">
-          <span className="text-[#cc0000] font-bold text-[14px]">{card.price}</span>
-          {card.old_price && (
-            <span className="text-gray-400 text-[12px] line-through">{card.old_price}</span>
-          )}
-        </div>
-
-        {/* Star rating (static decorative) */}
-        <div className="flex items-center gap-0.5 mt-0.5">
-          {[...Array(5)].map((_, i) => (
-            <svg key={i} className={`w-3 h-3 ${i < 4 ? "text-yellow-400" : "text-gray-300"}`} fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-          ))}
-          <span className="text-[10px] text-gray-400 ml-1">(4.0)</span>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 const heroSlides = [
   {
-    src: "/image copy 5.png",
+    src: slide1,
     objectFit: "cover",
     objectPosition: "top center",
-    borderRadius: "40px",
-    heading: "Timeless Elegance",
-    sub: "Crafted for those who value precision and style",
+    eyebrow: "New Arrival",
+    heading: "Light Up Every\nMoment",
+    sub: "India's most trusted torches & emergency lights — built for every home, every outage.",
     btn: "SHOP NOW",
+    btn2: "VIEW OFFERS",
+    badge: "Free Shipping above ₹999",
   },
   {
-    src: "/image copy 6.png",
+    src: slide2,
     objectFit: "cover",
     objectPosition: "top center",
-    borderRadius: "40px",
-    heading: "New Arrivals 2025",
-    sub: "India's oldest timepiece brand since 1971",
-    btn: "EXPLORE",
+    eyebrow: "Trusted Since 1983",
+    heading: "Never Be Left\nin the Dark",
+    sub: "Oreva's precision-engineered lighting solutions — high brightness, long backup, zero compromise.",
+    btn: "EXPLORE RANGE",
+    btn2: "BEST SELLERS",
+    badge: "1 Year Warranty",
   },
   {
-    src: "/image copy 7.png",
+    src: slide3,
     objectFit: "cover",
     objectPosition: "top center",
-    borderRadius: "40px",
-    heading: "Built to Last",
-    sub: "Premium quartz movement. Unmatched durability.",
+    eyebrow: "Emergency Ready",
+    heading: "Built for Every\nEmergency",
+    sub: "SMD LED technology. 12–20 hour backup. Durable design that lasts for years.",
     btn: "VIEW COLLECTION",
+    btn2: "KNOW MORE",
+    badge: "144+ Orders This Week",
   },
 ];
 
 function HeroSlider() {
   const [current, setCurrent] = useState(0);
+  const [prev2, setPrev2] = useState(null);
+  const [paused, setPaused] = useState(false);
+  const navigate = useNavigate();
+
+  const goTo = (next) => {
+    setPrev2(current);
+    setCurrent(next);
+  };
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % heroSlides.length);
-    }, 4000);
+    if (paused) return;
+    const timer = setInterval(() => goTo((current + 1) % heroSlides.length), 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [current, paused]);
+
+  const prev = () => goTo((current - 1 + heroSlides.length) % heroSlides.length);
+  const next = () => goTo((current + 1) % heroSlides.length);
+
+  const handleNavClick = (path) => {
+    setPaused(true);
+    window.location.href = path;
+  };
 
   return (
-    <div className="relative w-full h-full" style={{ overflow: "hidden" }}>
+    <div className="relative w-full h-full overflow-hidden bg-black">
+      {/* Slides */}
       {heroSlides.map((slide, i) => (
         <div
           key={i}
+          className="absolute inset-0 transition-all duration-700 ease-in-out"
           style={{
-            position: "absolute",
-            inset: 0,
             transform: i === current ? "translateX(0%)" : i < current ? "translateX(-100%)" : "translateX(100%)",
-            transition: "transform 0.7s ease-in-out",
-            borderRadius: slide.borderRadius,
-            overflow: "hidden",
+            zIndex: i === current ? 2 : 1,
           }}
         >
+          {/* Image with subtle zoom */}
           <img
             src={slide.src}
             alt={`Hero slide ${i + 1}`}
-            style={{
-              width: "100%",
-              height: "100%",
-              objectFit: slide.objectFit,
-              objectPosition: slide.objectPosition,
-              display: "block",
-              borderRadius: slide.borderRadius,
-              
-            }}
+            className={`w-full h-full object-cover object-top transition-transform duration-[6000ms] ease-out ${i === current ? "scale-110" : "scale-100"}`}
           />
-          {/* Dark overlay */}
-          <div style={{ position: "absolute", inset: 0, background: "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.15) 100%)" }} />
+
+          {/* Multi-layer overlay */}
+          <div className="absolute inset-0" style={{ background: "linear-gradient(105deg, rgba(0,0,0,0.72) 0%, rgba(0,0,0,0.35) 55%, rgba(0,0,0,0.10) 100%)" }} />
+          <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(0,0,0,0.5) 0%, transparent 50%)" }} />
+
+          {/* Content — left aligned */}
+          <div className="absolute inset-0 flex flex-col justify-center px-8 md:px-20 z-10">
+            <AnimatePresence mode="wait">
+              {i === current && (
+                <motion.div key={`content-${i}`} className="flex flex-col items-start max-w-xl"
+                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.4 }}>
+
+                  {/* Eyebrow */}
+                  <motion.div
+                    className="flex items-center gap-2 mb-4"
+                    initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.5, delay: 0.1 }}
+                  >
+                    <span className="w-6 h-px bg-[#cc0000]" />
+                    <span className="text-[#cc0000] text-[11px] font-black tracking-[0.3em] uppercase">{slide.eyebrow}</span>
+                  </motion.div>
+
+                  {/* Heading */}
+                  <motion.h1
+                    className="text-white text-[32px] md:text-[52px] font-black leading-[1.1] tracking-tight drop-shadow-xl mb-4"
+                    initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.55, delay: 0.2 }}
+                    style={{ whiteSpace: "pre-line" }}
+                  >
+                    {slide.heading}
+                  </motion.h1>
+
+                  {/* Sub */}
+                  <motion.p
+                    className="text-white/75 text-sm md:text-base leading-relaxed mb-6 max-w-sm"
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}
+                  >
+                    {slide.sub}
+                  </motion.p>
+
+                  {/* Buttons */}
+                  <motion.div
+                    className="flex items-center gap-3 flex-wrap"
+                    initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.4 }}
+                  >
+                    <div className="h-10" />{/* spacer — buttons rendered outside AnimatePresence */}
+                  </motion.div>
+
+                  {/* Badge */}
+                  <motion.div
+                    className="mt-6 flex items-center gap-2"
+                    initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5, delay: 0.55 }}
+                  >
+                    <svg className="w-3.5 h-3.5 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                    <span className="text-white/60 text-[11px] font-semibold tracking-wide">{slide.badge}</span>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       ))}
 
-      {/* Dots */}
-      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex gap-2 z-10">
+      {/* Slide counter — top right */}
+      <div className="absolute top-6 right-8 z-20 flex items-center gap-2">
+        <span className="text-white font-black text-[13px]">0{current + 1}</span>
+        <span className="w-8 h-px bg-white/30" />
+        <span className="text-white/40 text-[11px]">0{heroSlides.length}</span>
+      </div>
+
+      {/* Persistent CTA buttons — never unmount, no delay */}
+      <div className="absolute bottom-20 left-8 md:left-20 z-20 flex items-center gap-3 flex-wrap">
+        <button
+          onPointerDown={() => handleNavClick("/shop")}
+          className="bg-[#cc0000] hover:bg-[#a00000] text-white text-[11px] font-black tracking-[0.2em] uppercase px-7 py-3 rounded-full transition-all duration-300 shadow-lg shadow-red-900/30 hover:scale-105 cursor-pointer"
+        >
+          {heroSlides[current].btn}
+        </button>
+        <button
+          onPointerDown={() => handleNavClick("/shop")}
+          className="bg-white/10 backdrop-blur-sm hover:bg-white/20 text-white text-[11px] font-black tracking-[0.2em] uppercase px-7 py-3 rounded-full border border-white/30 transition-all duration-300 hover:scale-105 cursor-pointer"
+        >
+          {heroSlides[current].btn2}
+        </button>
+      </div>
+
+      {/* Arrow buttons — vertical on right side */}
+      <div className="absolute right-6 top-1/2 -translate-y-1/2 z-20 flex flex-col gap-2">
+        <button onClick={prev} aria-label="Previous slide"
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/25 border border-white/20 text-white transition-all duration-200 backdrop-blur-sm">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+          </svg>
+        </button>
+        <button onClick={next} aria-label="Next slide"
+          className="w-9 h-9 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/25 border border-white/20 text-white transition-all duration-200 backdrop-blur-sm">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+      </div>
+
+      {/* Progress bars — bottom */}
+      <div className="absolute bottom-6 left-8 md:left-20 z-20 flex gap-2 items-center">
         {heroSlides.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrent(i)}
-            className={`w-2.5 h-2.5 rounded-full transition-all duration-300 ${i === current ? "bg-white scale-125" : "bg-white/50"}`}
-          />
-        ))} 
+          <button key={i} onClick={() => goTo(i)} className="relative h-[3px] rounded-full overflow-hidden bg-white/20 transition-all duration-300"
+            style={{ width: i === current ? 40 : 20 }}>
+            {i === current && (
+              <motion.div className="absolute inset-y-0 left-0 bg-[#cc0000] rounded-full"
+                initial={{ width: "0%" }} animate={{ width: "100%" }} transition={{ duration: 5, ease: "linear" }} key={current} />
+            )}
+          </button>
+        ))}
       </div>
     </div>
   );
 }
 
-export default function Home() {
-  const [activeTab, setActiveTab] = useState("mens");
-  const [drawerProduct, setDrawerProduct] = useState(null);
-  const navigate = useNavigate();
-  const products = activeTab === "mens" ? mensProducts : noorProducts;
+const TESTIMONIALS = [
+  {
+    stars: 5,
+    quote: "Ajanta torches have been our go-to for years. Incredibly reliable during power cuts — the whole family trusts them.",
+    name: "Ramesh Patel",
+    role: "Homeowner · Ahmedabad",
+    avatar: "https://i.pravatar.cc/80?img=11",
+  },
+  {
+    stars: 5,
+    quote: "The emergency light we bought lasted through a 6-hour outage without a flicker. Outstanding build quality.",
+    name: "Sunita Mehta",
+    role: "Shop Owner · Surat",
+    avatar: "https://i.pravatar.cc/80?img=47",
+  },
+  {
+    stars: 4,
+    quote: "Ajanta clocks are a staple in our office. Precise, stylish, and built to last. Trusted since 1983 for a reason.",
+    name: "Arjun Sharma",
+    role: "Office Manager · Mumbai",
+    avatar: "https://i.pravatar.cc/80?img=33",
+  },
+];
 
-  const lifestyleCards = allProducts.filter(p => p.category === "Women's").slice(0, 5).map(p => ({
-    img: p.img,
-    title: p.title,
-    price: p.price,
-    product_thumb: p.img,
-    id: p.id,
-  }));
+function Testimonials() {
+  const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    const t = setInterval(() => setActive(p => (p + 1) % TESTIMONIALS.length), 5000);
+    return () => clearInterval(t);
+  }, []);
+
+  const t = TESTIMONIALS[active];
+
+  return (
+    <section className="relative w-full py-24 overflow-hidden" style={{ background: "linear-gradient(135deg, #0f1923 0%, #1a2535 60%, #0f1923 100%)" }}>
+      {/* Ambient glow */}
+      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] rounded-full opacity-10 blur-3xl" style={{ background: "radial-gradient(ellipse, #cf2127 0%, transparent 70%)" }} />
+
+      <div className="relative z-10 max-w-2xl mx-auto px-6 flex flex-col items-center text-center">
+
+        {/* Glassmorphism card */}
+        <div className="w-full rounded-2xl px-8 py-10 flex flex-col items-center text-center"
+          style={{
+            background: "rgba(255,255,255,0.05)",
+            backdropFilter: "blur(18px)",
+            WebkitBackdropFilter: "blur(18px)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            boxShadow: "0 8px 48px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.08)",
+          }}
+        >
+          {/* Stars */}
+          <motion.div
+            key={`stars-${active}`}
+            className="flex gap-1.5 mb-7"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+          >
+            {Array.from({ length: 5 }).map((_, i) => (
+              <motion.svg
+                key={i}
+                className="w-5 h-5"
+                viewBox="0 0 20 20"
+                fill={i < t.stars ? "#f59e0b" : "none"}
+                stroke={i < t.stars ? "#f59e0b" : "#4b5563"}
+                strokeWidth={1.5}
+                initial={{ scale: 0, rotate: -30 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ duration: 0.4, delay: i * 0.07 }}
+              >
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </motion.svg>
+            ))}
+          </motion.div>
+
+          {/* Quote */}
+          <AnimatePresence mode="wait">
+            <motion.blockquote
+              key={`quote-${active}`}
+              className="text-white/90 text-lg md:text-xl font-light italic leading-relaxed mb-7"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={{ duration: 0.55, ease: "easeInOut" }}
+            >
+              "{t.quote}"
+            </motion.blockquote>
+          </AnimatePresence>
+
+          {/* Divider */}
+          <motion.div
+            className="w-10 h-px bg-[#cf2127] mb-5"
+            initial={{ scaleX: 0 }}
+            animate={{ scaleX: 1 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+          />
+
+          {/* Name / role */}
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={`name-${active}`}
+              className="text-white/40 text-[11px] font-bold tracking-[0.25em] uppercase mb-7"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              {t.name} · {t.role}
+            </motion.p>
+          </AnimatePresence>
+
+          {/* Avatar switcher */}
+          <div className="flex items-center mb-6">
+            {TESTIMONIALS.map((item, i) => (
+              <motion.button
+                key={i}
+                onClick={() => setActive(i)}
+                className="relative"
+                style={{ zIndex: i === active ? 10 : 5 - i, marginLeft: i === 0 ? 0 : -12 }}
+                animate={{ scale: i === active ? 1.18 : 0.88, opacity: i === active ? 1 : 0.5 }}
+                transition={{ duration: 0.35 }}
+              >
+                <img
+                  src={item.avatar}
+                  alt={item.name}
+                  className="w-11 h-11 rounded-full object-cover"
+                  style={{ border: i === active ? "2.5px solid #cf2127" : "2px solid rgba(255,255,255,0.15)" }}
+                />
+              </motion.button>
+            ))}
+          </div>
+
+          {/* Progress dots */}
+          <div className="flex gap-2">
+            {TESTIMONIALS.map((_, i) => (
+              <motion.button
+                key={i}
+                onClick={() => setActive(i)}
+                className="h-1 rounded-full bg-white/20 overflow-hidden"
+                animate={{ width: i === active ? 28 : 8 }}
+                transition={{ duration: 0.35 }}
+              >
+                {i === active && (
+                  <motion.div
+                    className="h-full bg-[#cf2127]"
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 5, ease: "linear" }}
+                  />
+                )}
+              </motion.button>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+export default function Home() {
+  const navigate = useNavigate();
 
   return (
     <div className="w-full flex flex-col bg-white">
-      {/* Hero */}
-      <section className="relative h-[75vh] md:h-[85vh] bg-white" style={{overflow: "hidden", borderRadius: "40px", margin: "0 16px"}}>
+      {/* Hero — no scroll animation, it's the first thing visible */}
+      <section className="relative h-[60vh] md:h-[75vh] bg-white" style={{overflow: "hidden", borderRadius: "0px", margin: "0"}}>
         <HeroSlider />
       </section>
 
-      {/* Marquee */}
-      <div className="w-full bg-[#111] py-5.5 overflow-hidden flex items-center shrink-0">
-        <div className="whitespace-nowrap animate-[scroll_25s_linear_infinite] inline-flex items-center gap-12 font-semibold tracking-[0.05em] text-[13px]">
-          {[...Array(4)].map((_, i) => (
-            <span key={i} className="text-white inline-flex gap-12">
-              <span>FREE 7 DAYS RETURN POLICY // ORDERS SHIPS WITHIN-<span className="text-[#facc15] font-bold">24HRS</span></span>
-              <span>INDIA'S OLDEST TIMEPIECE BRAND SINCE 1971</span>
-            </span>
-          ))}
-        </div>
-      </div>
-
-      {/* Lifestyle Cards */}
-      <section className="w-full px-6 md:px-14 pt-16 md:pt-20 pb-12">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-8">
-          {lifestyleCards.map((card, i) => (
-            <div key={i} className="relative w-full overflow-hidden rounded-2xl group cursor-pointer bg-[#f2f2f2] shadow-md hover:shadow-2xl transition-all duration-300" style={{ height: "360px" }}>
-              {/* Product image — fills full card, no gap */}
-              <img
-                src={card.img}
-                alt={card.title}
-                className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105"
-              />
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/25 to-transparent" />
-              {/* Bottom info */}
-              <div className="absolute bottom-0 w-full flex flex-col rounded-b-2xl overflow-hidden">
-                <div className="px-3 pt-2 pb-2.5 flex items-start gap-2">
-                  <div className="w-10 h-10 rounded-full border-2 border-white/70 overflow-hidden bg-white shrink-0 shadow-md">
-                    <img src={card.product_thumb} alt="thumb" className="w-full h-full object-cover object-top" />
-                  </div>
-                  <div className="text-white flex flex-col gap-0.5">
-                    <p className="text-[10.5px] leading-snug font-medium line-clamp-2">{card.title}</p>
-                    <p className="font-bold text-[13px] text-yellow-300">{card.price}</p>
-                  </div>
-                </div>
-                <div className="w-full h-10 flex">
-                  <button
-                    className="flex-[4] bg-[#700000]/95 text-white font-semibold text-[11.5px] tracking-wide hover:bg-[#8b0000] transition-colors border-r border-[#4a0000]"
-                    onClick={() => { navigate(`/product/${card.id}`); window.scrollTo(0,0); }}
-                  >
-                    Add To Cart
-                  </button>
-                  <button
-                    className="flex-1 bg-[#700000]/95 text-white flex items-center justify-center hover:bg-[#8b0000] transition-colors"
-                    onClick={() => { navigate(`/product/${card.id}`); window.scrollTo(0,0); }}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Collection Tabs + Product Grid */}
-      <section className="w-full px-0">
-        {/* Tabs */}
-        <div className="flex justify-center items-center gap-10 border-b border-gray-200 mt-10 mb-0 px-4">
-          <button
-            onClick={() => setActiveTab("mens")}
-            className={`text-[15px] font-medium pb-3 px-1 border-b-2 transition-colors ${activeTab === "mens" ? "text-black border-black" : "text-gray-400 border-transparent hover:text-black"}`}
+      {/* Feature Banner */}
+      <motion.section
+        className="w-full flex h-[340px] md:h-[400px] overflow-hidden"
+        initial={{ opacity: 0, y: 60 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      >
+        {/* Panel 1 */}
+        <motion.div
+          className="relative w-[25%] overflow-hidden group cursor-pointer"
+          initial={{ opacity: 0, x: -60 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          whileHover="hover"
+        >
+          <motion.video
+            autoPlay muted loop playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            poster="/image copy 5.png"
+            variants={{ hover: { scale: 1.08 } }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
           >
-            Men's Collection
-          </button>
-          <button
-            onClick={() => setActiveTab("noor")}
-            className={`text-[15px] font-normal pb-3 px-1 border-b-2 transition-colors ${activeTab === "noor" ? "text-black border-black" : "text-gray-400 border-transparent hover:text-black"}`}
+            <source src={heroVideo} type="video/mp4" />
+          </motion.video>
+          <div className="absolute inset-0 bg-black/20" />
+          <motion.div
+            className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent px-4 py-4"
+            variants={{ hover: { y: 0, opacity: 1 } }}
+            initial={{ y: 30, opacity: 0 }}
+            transition={{ duration: 0.4 }}
           >
-            Noor Collection
-          </button>
-        </div>
+            <p className="text-white text-[10px] font-bold tracking-[0.2em] uppercase">Ajanta Lighting</p>
+          </motion.div>
+        </motion.div>
 
-        {/* Product Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-5 px-6 md:px-14 pt-8">
-          {products.map((card, i) => (
-            <ProductCard key={i} card={card} onQuickShop={setDrawerProduct} />
-          ))}
-        </div>
-
-        {/* Dots */}
-        <div className="flex justify-center gap-1.5 mt-6">
-          <span className="w-2 h-2 rounded-full bg-black" />
-          <span className="w-2 h-2 rounded-full bg-gray-300" />
-        </div>
-
-        {/* All Products Button */}
-        <div className="flex justify-center my-8">
-          <button className="bg-black text-white hover:bg-gray-800 transition-colors py-3.5 px-10 text-[12px] font-bold tracking-[0.12em] uppercase">
-            ALL PRODUCTS
-          </button>
-        </div>
-      </section>
-
-      {/* New Arrival Banner */}
-      <section className="relative w-full h-[500px] md:h-[600px] overflow-hidden">
-        {/* Background Image */}
-        <img
-          src="/image copy 3.png"
-          alt="New Arrival Watch"
-          className="absolute inset-0 w-full h-full object-cover object-center"
-        />
-        {/* Minimal overlay */}
-        <div className="absolute inset-0 bg-black/20" />
-
-        {/* Centered Content */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-6 z-10 gap-0">
-
-          {/* Main heading */}
-          
-
-          {/* Subheading */}
-          <p className="text-[13px] md:text-[15px] text-white/60 font-medium tracking-[0.25em] uppercase mb-5">
-            Precision · Elegance · Legacy
-          </p>
-
-          {/* Description */}
-          <p className="text-[15px] md:text-[18px] text-white/85 font-light mb-3 max-w-md leading-relaxed">
-            Crafted for the modern gentleman who values timeless style over fleeting trends.
-          </p>
-
-          {/* Price teaser */}
-          <p className="text-[13px] text-white/50 mb-8 tracking-wide">
-            Starting at <span className="text-yellow-400 font-bold text-[16px]">₹ 2,252</span> &nbsp;·&nbsp; Free Shipping &nbsp;·&nbsp; 1 Yr Warranty
-          </p>
-
-          {/* CTA Buttons */}
-          <div className="flex items-center gap-4 flex-wrap justify-center">
-            <button
-              onClick={() => { navigate("/shop"); window.scrollTo(0, 0); }}
-              className="bg-[#cc0000] text-white py-4 px-10 text-[11px] font-black tracking-[0.18em] uppercase hover:bg-[#aa0000] transition-all duration-300 shadow-2xl"
-            >
-              SHOP NEW ARRIVALS
-            </button>
-            <button
-              onClick={() => { navigate("/mens"); window.scrollTo(0, 0); }}
-              className="border border-white/50 text-white py-4 px-8 text-[11px] font-bold tracking-[0.15em] uppercase hover:bg-white hover:text-[#1a1a1a] transition-all duration-300"
-            >
-              VIEW MEN'S COLLECTION
-            </button>
-          </div>
-
-         
-         
-        </div>
-      </section>
-
-      {/* ALL COLLECTIONS */}
-      <section className="w-full px-6 md:px-14 py-16">
-        <div className="text-center mb-10">
-          <h2 className="text-[28px] md:text-[36px] font-black tracking-tight text-[#1a1a1a] uppercase">All Collections</h2>
-          <p className="text-gray-400 text-[13px] mt-1 tracking-wide">Luxury. Beauty. Elegance.</p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          {[
-            { img: "/image copy.png", name: "Noor Collection", items: 12 },
-            { img: "/image copy 2.png", name: "Rose Gold Series", items: 8 },
-            { img: "/image copy 3.png", name: "Alaia Collection", items: 10 },
-            { img: "/image copy 4.png", name: "La Luna Collection", items: 9 },
-          ].map((col, i) => (
-            <div key={i} className="relative group cursor-pointer overflow-hidden">
-              <div className="w-full aspect-[3/4] overflow-hidden">
-                <img src={col.img} alt={col.name} className="w-full h-full object-cover object-top transition-transform duration-700 group-hover:scale-105" />
-              </div>
-              <div className="pt-3 pb-1 text-center">
-                <p className="text-[13px] font-bold tracking-widest uppercase text-[#1a1a1a]">{col.name}</p>
-                <p className="text-[12px] text-gray-400 mt-0.5">{col.items} Items</p>
-                <div className="w-8 h-[2px] bg-[#cc0000] mx-auto mt-2 transition-all duration-300 group-hover:w-16" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* STACK YOUR TIME */}
-      <section className="w-full bg-[#f6f3ee] py-20 overflow-hidden">
-        {/* Section Header */}
-        <div className="text-center mb-14 px-6">
-          <p className="text-[#cc0000] text-[11px] font-bold tracking-[0.3em] uppercase mb-3">Exclusive Collection</p>
-          <h2 className="text-[28px] md:text-[42px] font-black text-[#1a1a1a] uppercase leading-tight">
-            Stack Your Time —{" "}
-            <span className="text-[#cc0000]">Define Your Style</span>
-          </h2>
-          <p className="text-gray-500 text-[13px] mt-4 max-w-xl mx-auto leading-relaxed">
-            Thoughtfully curated Watch & Bracelet Sets — where elegance meets simplicity. Each piece feels effortless, feminine, and timeless.
-          </p>
-        </div>
-
-        {/* Featured Hero — full-bleed left image + right content */}
-        <div className="flex flex-col md:flex-row mb-16">
-          {/* LEFT — Big Image, no padding, full height */}
-          <div className="w-full md:w-[55%] relative" style={{ minHeight: "620px" }}>
-            <img
-              src="/image copy 21.png"
-              alt="Stack Your Time Featured"
-              className="absolute inset-0 w-full h-full object-contain object-center bg-[#f6f3ee]"
+        {/* Panel 2 */}
+        <motion.div
+          className="relative w-[35%] overflow-hidden border-l border-white/20 group cursor-pointer"
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
+          whileHover="hover"
+        >
+          <motion.video
+            autoPlay muted loop playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            variants={{ hover: { scale: 1.06 } }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+          >
+            <source src={heroVideo2} type="video/mp4" />
+          </motion.video>
+          <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+          <motion.div
+            className="absolute bottom-5 left-5"
+            variants={{ hover: { y: -8 } }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+          >
+            <p className="text-white text-[11px] font-bold tracking-widest uppercase">AJANTA QUARTZ</p>
+            <p className="text-white/70 text-[10px] tracking-wide">Trusted Since 1983</p>
+            <motion.div
+              className="mt-2 h-[2px] bg-[#cf2127]"
+              variants={{ hover: { width: 64 } }}
+              initial={{ width: 0 }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
             />
-            {/* right-edge fade into light panel */}
-            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-[#f6f3ee] hidden md:block" />
-            <span className="absolute top-6 left-6 bg-[#cc0000] text-white text-[10px] font-black px-3 py-1.5 rounded-full tracking-widest uppercase shadow-lg z-10">
-              SALE -40%
-            </span>
-          </div>
+          </motion.div>
+        </motion.div>
 
-          {/* RIGHT — Content panel */}
-          <div className="w-full md:w-[45%] bg-[#f6f3ee] flex flex-col justify-center px-8 md:px-14 py-12 gap-6">
-            <p className="text-[10px] text-gray-400 tracking-[0.25em] uppercase">AWC127ESL/1 · Watch & Bracelet Set</p>
-            <h3 className="text-[22px] md:text-[28px] font-black text-[#1a1a1a] leading-snug">
-              Ajanta Quartz Two Tone Women's Analog Watch
-              <span className="text-gray-500 font-light text-[15px] block mt-2">
-                Silver Dial · Premium Metal Bracelet · Square Design
-              </span>
-            </h3>
-
-            {/* Stars */}
-            <div className="flex items-center gap-1.5">
-              {[...Array(5)].map((_, i) => (
-                <svg key={i} className={`w-3.5 h-3.5 ${i < 4 ? "text-yellow-400" : "text-gray-300"}`} fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              ))}
-              <span className="text-gray-400 text-[11px] ml-1">4.0 · 38 reviews</span>
-            </div>
-
-            {/* Price */}
-            <div className="flex items-end gap-3">
-              <span className="text-[36px] font-black text-[#1a1a1a] leading-none">₹ 2,815</span>
-              <span className="text-gray-400 text-[14px] line-through mb-1">₹ 4,700.00</span>
-              <span className="text-[#cc0000] text-[12px] font-bold mb-1">Save ₹1,885</span>
-            </div>
-
-            {/* Features */}
-            <div className="flex flex-col gap-2.5">
-              {[
-                "Quartz Movement — High Accuracy",
-                "Two-Tone Premium Metal Bracelet",
-                "Elegant Square Dial Design",
-                "1 Year Manufacturer Warranty",
-              ].map(f => (
-                <div key={f} className="flex items-center gap-2.5 text-[12px] text-gray-600">
-                  <svg className="w-3.5 h-3.5 text-[#cc0000] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {f}
-                </div>
-              ))}
-            </div>
-
-            {/* Trust badges */}
-            <div className="flex items-center gap-6 py-4 border-t border-gray-200">
-              {[["🚚", "Free Shipping"], ["↩️", "7 Day Return"], ["🛡️", "1 Yr Warranty"]].map(([icon, label]) => (
-                <div key={label} className="flex items-center gap-1.5">
-                  <span className="text-[14px]">{icon}</span>
-                  <span className="text-[10px] text-gray-500">{label}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* CTA */}
-            <div className="flex gap-3">
-              <button
-                onClick={() => { navigate("/product/13"); window.scrollTo(0, 0); }}
-                className="flex-1 bg-[#cc0000] text-white py-3.5 text-[11px] font-black tracking-widest uppercase rounded-lg hover:bg-[#aa0000] transition-colors"
-              >
-                SHOP NOW
-              </button>
-              <button
-                onClick={() => { navigate("/product/13"); window.scrollTo(0, 0); }}
-                className="px-5 border border-gray-300 text-[#1a1a1a] rounded-lg hover:border-gray-500 transition-colors text-[11px] font-bold tracking-wide"
-              >
-                VIEW DETAILS
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* 5 product cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 px-6 md:px-14">
-          {[
-            { id: 14, img: "/image copy 22.png", hoverImg: "/image copy 23.png", name: "Rose Gold Black Dial Square Watch", sku: "AWC127ESL/2", price: "₹ 2,586.00", old: "₹ 4,700.00", tag: "SALE -45%" },
-            { id: 15, img: "/image copy 23.png", hoverImg: "/image copy 24.png", name: "Blue Crystal Studded Bracelet Watch", sku: "AWC126ESL/1", price: "₹ 2,756.00", old: "₹ 4,700.00", tag: "SALE -41%" },
-            { id: 16, img: "/image copy 24.png", hoverImg: "/image copy 25.png", name: "Green Dial Rose Gold Square Watch", sku: "AWC127ESL/3", price: "₹ 2,755.00", old: "₹ 4,700.00", tag: "SALE -41%" },
-            { id: 17, img: "/image copy 25.png", hoverImg: "/image copy 26.png", name: "Silver Crystal Studded Bracelet Watch", sku: "AWC126ESL/2", price: "₹ 2,756.00", old: "₹ 4,700.00", tag: "SALE -41%" },
-            { id: 18, img: "/image copy 26.png", hoverImg: "/image copy 25.png", name: "Brown Dial Square Bracelet Watch", sku: "AWC127FSL/4", price: "₹ 2,720.00", old: "₹ 4,700.00", tag: "SALE -42%" },
-          ].map((p) => (
-            <div
-              key={p.id}
-              className="flex flex-col cursor-pointer group"
-              onClick={() => { navigate(`/product/${p.id}`); window.scrollTo(0, 0); }}
+        {/* Panel 3 */}
+        <motion.div
+          className="relative flex-1 overflow-hidden border-l border-white/20 group cursor-pointer"
+          initial={{ opacity: 0, x: 60 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+          whileHover="hover"
+        >
+          <motion.video
+            autoPlay muted loop playsInline
+            className="absolute inset-0 w-full h-full object-cover"
+            variants={{ hover: { scale: 1.05 } }}
+            transition={{ duration: 0.7, ease: "easeOut" }}
+          >
+            <source src={heroVideo3} type="video/mp4" />
+          </motion.video>
+          <motion.div
+            className="absolute inset-0 bg-black/40"
+            variants={{ hover: { backgroundColor: "rgba(0,0,0,0.52)" } }}
+            transition={{ duration: 0.4 }}
+          />
+          <div className="absolute inset-0 flex flex-col items-start justify-end p-8">
+            <motion.p
+              className="text-white/70 text-[10px] font-bold tracking-[0.25em] uppercase mb-1"
+              variants={{ hover: { y: 0, opacity: 1 } }}
+              initial={{ y: 10, opacity: 0.5 }}
+              transition={{ duration: 0.4 }}
             >
-              <div className="relative w-full aspect-[3/4] bg-[#f0ede8] overflow-hidden mb-3 rounded-xl border border-gray-100">
-                <img src={p.img} alt={p.name} className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-500" />
-                <img src={p.hoverImg} alt="" className="absolute inset-0 w-full h-full object-cover object-top transition-all duration-500 opacity-0 group-hover:opacity-100" />
-                <span className="absolute top-2.5 left-2.5 bg-[#cc0000] text-white text-[9px] font-black px-2 py-1 rounded-full tracking-wide z-10">{p.tag}</span>
-                <div className="absolute bottom-0 left-0 right-0 bg-white/10 backdrop-blur-sm text-white text-[10px] font-bold tracking-widest uppercase py-2.5 text-center opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0">
-                  QUICK VIEW
+              New Collection
+            </motion.p>
+            <motion.h2
+              className="text-white text-[22px] md:text-[28px] font-black leading-tight mb-4"
+              variants={{ hover: { y: -4, letterSpacing: "0.02em" } }}
+              transition={{ duration: 0.4 }}
+            >
+              Precision<br />By Nature
+            </motion.h2>
+            <motion.div
+              className="flex gap-3"
+              variants={{ hover: { y: 0, opacity: 1 } }}
+              initial={{ y: 16, opacity: 0 }}
+              transition={{ duration: 0.45, delay: 0.08 }}
+            >
+              <button
+                onClick={() => navigate("/shop?filter=hand-torch")}
+                className="bg-white text-[#1a1a1a] text-[11px] font-bold tracking-widest uppercase px-5 py-2.5 rounded-full hover:bg-[#cf2127] hover:text-white transition-colors duration-300"
+              >
+                SHOP TORCHES
+              </button>
+              <button
+                onClick={() => navigate("/shop?filter=clock")}
+                className="bg-white/20 backdrop-blur-sm text-white text-[11px] font-bold tracking-widest uppercase px-5 py-2.5 rounded-full border border-white/40 hover:bg-white/40 transition-colors duration-300"
+              >
+                SHOP CLOCKS
+              </button>
+            </motion.div>
+          </div>
+        </motion.div>
+      </motion.section>
+
+      {/* Category Cards */}
+      <motion.section
+        className="w-full px-6 md:px-14 py-16 bg-[#f9f9f9]"
+        initial={{ opacity: 0, y: 60 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.15 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      >
+        <motion.div
+          className="mb-10 text-center"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
+          <p className="text-[11px] font-bold tracking-[0.3em] uppercase text-[#cf2127] mb-2">Explore</p>
+          <h2 className="text-2xl md:text-3xl font-black text-[#1a1a1a] tracking-tight">Shop by Category</h2>
+        </motion.div>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
+          {dynamicCategories.map((cat) => (
+            <div
+              key={cat.label}
+              onClick={() => navigate(cat.to)}
+              className="group relative overflow-hidden rounded-2xl cursor-pointer bg-white shadow-sm hover:shadow-xl transition-all duration-500 h-[240px] md:h-[300px]"
+            >
+              <img
+                src={cat.img}
+                alt={cat.label}
+                className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 ease-in-out group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-500" />
+              <div className="absolute top-0 left-0 h-1 w-0 group-hover:w-full bg-[#cf2127] transition-all duration-500 ease-out" />
+              <div className="absolute bottom-0 left-0 right-0 p-4 translate-y-2 group-hover:translate-y-0 transition-transform duration-500">
+                <p className="text-white/60 text-[9px] font-bold tracking-[0.25em] uppercase mb-1 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
+                  {cat.sub}
+                </p>
+                <h3 className="text-white text-[13px] md:text-[15px] font-black tracking-wide leading-tight">{cat.label}</h3>
+                <p className="text-white/40 text-[10px] mt-0.5">{cat.count} products</p>
+                <div className="flex items-center gap-2 mt-2 opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300 delay-100">
+                  <span className="text-[9px] font-black tracking-[0.2em] uppercase text-white bg-[#cf2127] px-3 py-1 rounded-full">Shop Now</span>
+                  <span className="text-white text-sm">→</span>
                 </div>
               </div>
-              <p className="text-[9.5px] text-gray-400 tracking-widest uppercase mb-1">{p.sku}</p>
-              <p className="text-[12px] font-semibold text-[#1a1a1a] leading-snug mb-2 line-clamp-2">{p.name}</p>
-              <div className="flex items-center gap-2">
-                <span className="text-[#cc0000] font-black text-[13px]">{p.price}</span>
-                <span className="text-gray-600 text-[11px] line-through">{p.old}</span>
-              </div>
             </div>
           ))}
         </div>
-      </section>
+      </motion.section>
 
-      {/* STEAL DEALS */}
-      <section className="w-full px-6 md:px-14 py-16">
-        <div className="text-center mb-10">
-          <h2 className="text-[28px] md:text-[36px] font-black tracking-tight text-[#1a1a1a] uppercase">Steal Deals</h2>
-          <p className="text-gray-400 text-[13px] mt-1">Limited time offers — grab them before they're gone.</p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-5">
-          {[
-            { img: "/image copy 17.png", name: "Ajanta Rose Gold Women's Quartz Watch With Green Dial, Roman Numerals & Stainless Steel Bracelet", sku: "AWC119ESL/8", price: "₹ 2,374.00", old: "₹ 4,500.00", tag: "SALE -47%" },
-            { img: "/image copy 18.png", name: "Ajanta Quartz Green Dial Women's Rose-Gold Bracelet Watch With Crystal Accents", sku: "AWC121ESL/3", price: "₹ 2,347.00", old: "₹ 4,200.00", tag: "SALE -44%" },
-            { img: "/image copy 19.png", name: "Ajanta Quartz Green Analog Women's Watch — Stylish Stainless Strap With Premium Roman Dial Design", sku: "AWC116ESL/6", price: "₹ 2,364.00", old: "₹ 4,200.00", tag: "SALE -43%" },
-            { img: "/image copy 20.png", name: "Ajanta Quartz Rose Gold Women's Watch With Purple Dial & Matching Bracelet — Crystal Studded Analog Wrist Watch", sku: "AWC126ESL/4", price: "₹ 2,756.00", old: "₹ 4,700.00", tag: "SALE -41%" },
-            { img: "/image copy 15.png", name: "Ajanta Black Dial Men's Day & Date Watch — Premium Stainless Steel Quartz Model", sku: "AWC502-1ISG/BLS/B/BL", price: "₹ 2,534.00", old: "₹ 2,695.00", tag: "SALE -5%" },
-          ].map((p, i) => (
-            <div key={i} className="flex flex-col cursor-pointer group">
-              <div className="relative w-full aspect-[3/4] bg-[#f5f5f5] overflow-hidden mb-3 rounded-lg">
-                <img src={p.img} alt={p.name} className="absolute inset-0 w-full h-full object-cover object-top transition-transform duration-500 group-hover:scale-105" />
-                <span className="absolute top-2 left-2 bg-white text-[#cc0000] text-[10px] font-bold px-2 py-0.5 border border-gray-100 z-10">{p.tag}</span>
-              </div>
-              <p className="text-[11px] text-gray-400 mb-0.5">{p.sku}</p>
-              <p className="text-[12px] font-medium text-gray-800 leading-snug mb-1.5 line-clamp-3">{p.name}</p>
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400 text-[11px] line-through">{p.old}</span>
-                <span className="text-[#cc0000] font-bold text-[13px]">{p.price}</span>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Instagram Banner */}
-      <section className="relative w-full h-[420px] overflow-hidden cursor-pointer group">
-        <img src="/image copy 7.png" alt="Follow on Instagram" className="w-full h-full object-cover object-center transition-transform duration-700 group-hover:scale-105" />
-        <div className="absolute inset-0 bg-black/40" />
-        <div className="absolute inset-0 flex items-center justify-center">
-          <button className="border border-white text-white text-[12px] font-bold tracking-[0.2em] uppercase px-8 py-3.5 hover:bg-white hover:text-black transition-all duration-300">
-            FOLLOW US ON INSTAGRAM
-          </button>
-        </div>
-      </section>
+      {/* Testimonials */}
+      <motion.div
+        initial={{ opacity: 0, y: 60 }}
+        whileInView={{ opacity: 1, y: 0 }}
+        viewport={{ once: true, amount: 0.2 }}
+        transition={{ duration: 0.7, ease: "easeOut" }}
+      >
+        <Testimonials />
+      </motion.div>
 
       <style>{`
         @keyframes scroll {
@@ -736,13 +612,10 @@ export default function Home() {
           <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
             <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z" />
           </svg>
-          Chat
+          
           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-[11px] w-5 h-5 rounded-full flex items-center justify-center font-bold">1</span>
         </button>
       </div>
-
-      {/* Product Quick View Drawer */}
-      <ProductDrawer product={drawerProduct} onClose={() => setDrawerProduct(null)} />
 
     </div>
   );

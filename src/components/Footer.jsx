@@ -34,31 +34,15 @@ export default function Footer() {
     <footer className="w-full" style={{ background: "#2d0000" }}>
 
       {/* Newsletter */}
-      <div className="w-full border-b border-white/10" style={{ background: "#3d0000" }}>
-        <div className="max-w-7xl mx-auto px-6 md:px-16 py-12 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div>
-            <p className="text-[18px] tracking-[0.25em] uppercase text-red-200/60 mb-2">Stay in the loop</p>
-            <h3 className="text-[26px] md:text-[32px] font-black text-white">
-              Get <span className="text-yellow-300">10% OFF</span> your first order
-            </h3>
-          </div>
-          <div className="flex w-full md:w-auto gap-0 max-w-lg">
-            <input type="email" placeholder="Enter your email address"
-              className="flex-1 px-5 py-4 text-[18px] text-gray-800 bg-white outline-none rounded-l-xl placeholder:text-gray-400" />
-            <button className="bg-[#cc0000] text-white px-7 py-4 text-[18px] font-bold tracking-[0.15em] uppercase rounded-r-xl hover:bg-red-800 transition-colors whitespace-nowrap">
-              SUBSCRIBE
-            </button>
-          </div>
-        </div>
-      </div>
+
 
       {/* Main Grid */}
-      <div className="max-w-10xl mx-auto px-6 md:px-16 py-20 grid grid-cols-1 md:grid-cols-12 gap-12">
+      <div className="max-w-10xl mx-auto px-6 md:px-16 py-10 grid grid-cols-1 md:grid-cols-12 gap-12">
 
         {/* Brand */}
         <div className="md:col-span-4 flex flex-col gap-6 items-start">
           <img src="/Ajanta logo.png" alt="Ajanta" className="h-16 w-auto object-contain" />
-          <p className="text-red-100/65 text-[18px] leading-[1.9] max-w-xs text-left">
+          <p className="text-red-100/65 text-[14px] leading-[1.9] max-w-xs text-left">
             India's oldest timepiece brand since 1971. Over five decades of crafting precision watches that blend elegance with reliability.
           </p>
           <div className="flex items-center gap-3">
@@ -74,19 +58,19 @@ export default function Footer() {
           <div className="flex flex-wrap gap-3">
             {[{ icon: "", label: "Free Shipping" }, { icon: "↩", label: "7 Day Returns" }, { icon: "", label: "1 Yr Warranty" }].map(b => (
               <div key={b.label} className="flex items-center gap-2 border border-white/15 rounded-xl px-4 py-3">
-                <span className="text-[18px]">{b.icon}</span>
-                <span className="text-[18px] text-red-100/70 font-medium">{b.label}</span>
+                <span className="text-[14px]">{b.icon}</span>
+                <span className="text-[14px] text-red-100/70 font-medium">{b.label}</span>
               </div>
             ))}
           </div>
         </div>
 
-        {/* Quick Links */}
+        {/* Quick Links */} 
         <div className="md:col-span-2 flex flex-col gap-2">
-          <p className="text-[18px] font-bold tracking-[0.2em] uppercase text-white pb-4 border-b border-white/15">Quick Links</p>
+          <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-white pb-4 border-b border-white/15">Quick Links</p>
           {quickLinks.map(l => (
             <Link key={l.label} to={l.to}
-              className="text-red-100/65 text-[18px] hover:text-white transition-colors flex items-center gap-2 group py-2">
+              className="text-red-100/65 text-[14px] hover:text-white transition-colors flex items-center gap-2 group py-2">
               <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               {l.label}
             </Link>
@@ -95,10 +79,10 @@ export default function Footer() {
 
         {/* Customer Care */}
         <div className="md:col-span-2 flex flex-col gap-2">
-          <p className="text-[18px] font-bold tracking-[0.2em] uppercase text-white pb-4 border-b border-white/15">Customer Care</p>
+          <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-white pb-4 border-b border-white/15">Customer Care</p>
           {careLinks.map(l => (
             <a key={l} href="#"
-              className="text-red-100/65 text-[18px] hover:text-white transition-colors flex items-center gap-2 group py-2">
+              className="text-red-100/65 text-[14px] hover:text-white transition-colors flex items-center gap-2 group py-2">
               <span className="w-1.5 h-1.5 rounded-full bg-yellow-300 opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
               {l}
             </a>
@@ -107,7 +91,7 @@ export default function Footer() {
 
         {/* Contact */}
         <div className="md:col-span-4 flex flex-col gap-6">
-          <p className="text-[18px] font-bold tracking-[0.2em] uppercase text-white pb-4 border-b border-white/15">Get In Touch</p>
+          <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-white pb-4 border-b border-white/15">Get In Touch</p>
           <div className="flex flex-col gap-6">
             {contactInfo.map(c => (
               <div key={c.label} className="flex items-start gap-4">
@@ -117,17 +101,17 @@ export default function Footer() {
                   </svg>
                 </div>
                 <div>
-                  <p className="text-[18px] text-red-200/50 uppercase tracking-widest font-semibold mb-1">{c.label}</p>
-                  <p className="text-red-100/80 text-[18px] leading-snug">{c.text}</p>
+                  <p className="text-[11px] text-red-200/50 uppercase tracking-widest font-semibold mb-1">{c.label}</p>
+                  <p className="text-red-100/80 text-[11px] leading-snug">{c.text}</p>
                 </div>
               </div>
             ))}
           </div>
           <div>
-            <p className="text-[18px] font-bold tracking-[0.2em] uppercase text-red-200/50 mb-3">Secure Payments</p>
+            <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-red-200/50 mb-3">Secure Payments</p>
             <div className="flex flex-wrap gap-2">
               {["VISA", "Mastercard", "G Pay", "RuPay", "Paytm", "PhonePe", "UPI"].map(p => (
-                <span key={p} className="border border-white/15 text-red-100/70 text-[18px] font-bold px-3 py-1.5 rounded-lg">{p}</span>
+                <span key={p} className="border border-white/15 text-red-100/70 text-[11px] font-bold px-3 py-1.5 rounded-lg">{p}</span>
               ))}
             </div>
           </div>
@@ -137,11 +121,12 @@ export default function Footer() {
       {/* Bottom Bar */}
       <div className="w-full border-t border-white/10" style={{ background: "#1a0000" }}>
         <div className="max-w-7xl mx-auto px-6 md:px-16 py-6 flex flex-col md:flex-row items-center justify-between gap-2">
-          <p className="text-[18px] text-red-200/50">© 2025 Ajanta Quartz Pvt. Ltd. All rights reserved.</p>
-          <p className="text-[18px] text-red-200/40 tracking-wide">India's Oldest Timepiece Brand Since 1971</p>
+          <p className="text-[14px] text-red-200/50">© 2025 Ajanta Quartz Pvt. Ltd. All rights reserved.</p>
+          <p className="text-[14px] text-red-200/40 tracking-wide">India's Oldest Timepiece Brand Since 1971</p>
         </div>
       </div>
 
     </footer>
   );
 }
+
