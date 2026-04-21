@@ -1,14 +1,20 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useCart } from "../context/CartContext";
+import { useSelector, useDispatch } from "react-redux";
+import { removeFromCart } from "../store/cartSlice";
 
 export default function Checkout() {
   const navigate = useNavigate();
-  const { cart, cartCount, removeFromCart } = useCart();
+  const dispatch = useDispatch();
+  
+  // Redux selectors
+  const cartItems = useSelector(state => state.cart.items);
+  const cartCount = useSelector(state => state.cart.totalQuantity);
+  
   const [form, setForm] = useState({ name: "", email: "", phone: "", address: "", city: "", state: "", pincode: "", payment: "cod" });
   const [placed, setPlaced] = useState(false);
 
-  const total = cart.reduce((s, i) => s + (parseInt((i.price || "0").replace(/[^\d]/g, "")) * i.qty), 0);
+  const total = cartItems.reduce((s, i) => s + (parseInt((i.price || "0").replace(/[^\d]/g, "")) * i.qty), 0);
 
   const handle = e => setForm(f => ({ ...f, [e.target.name]: e.target.value }));
 
@@ -36,7 +42,7 @@ export default function Checkout() {
     );
   }
 
-  if (cart.length === 0) {
+  if (cartItems.length === 0) {
     return (
       <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-4">
         <p className="text-gray-400 text-[13px] tracking-widest uppercase">Your cart is empty</p>
@@ -113,7 +119,7 @@ export default function Checkout() {
           <div className="bg-white border border-gray-100 rounded-2xl p-6 h-fit sticky top-6">
             <h2 className="text-[12px] font-black uppercase tracking-widest text-[#1a1a1a] mb-5">Order Summary ({cartCount})</h2>
             <div className="flex flex-col gap-4 mb-5">
-              {cart.map(item => (
+              {cartItems.map(item => (
                 <div key={item.id} className="flex gap-3 items-start">
                   <img src={item.img} alt={item.title} className="w-14 h-14 object-cover bg-gray-100 rounded-lg shrink-0" />
                   <div className="flex-1 min-w-0">

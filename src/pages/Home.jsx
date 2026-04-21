@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { allProducts } from "../data/products";
+import FeaturesSection from "../components/FeaturesSection";
 import heroVideo from "../assets/198866-908874705.mp4";
 import heroVideo2 from "../assets/6500-192502235.mp4";
 import heroVideo3 from "../assets/43613-436237593.mp4";
@@ -409,6 +410,9 @@ export default function Home() {
       <section className="relative h-[60vh] md:h-[75vh] bg-white" style={{overflow: "hidden", borderRadius: "0px", margin: "0"}}>
         <HeroSlider />
       </section>
+
+      {/* Features Section */}
+      <FeaturesSection />
 
       {/* Feature Banner */}
       <motion.section

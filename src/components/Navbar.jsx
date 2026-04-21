@@ -1,510 +1,1141 @@
-import { useState, useEffect, useRef } from "react";
-import { Link, useLocation, useNavigate } from "react-router-dom";
-import { useCart } from "../context/CartContext";
-
-const mainLinks = [
-  {
-    label: "PRODUCTS", to: "/shop",
-    dropdown: [
-      { label: "All Products", to: "/shop" },
-      { label: "Hand Torches", to: "/shop?filter=hand-torch" },
-      { label: "Emergency Lights", to: "/shop?filter=emergency-light" },
-      { label: "Clocks", to: "/shop?filter=clock" },
-      { label: "Alarm Clocks", to: "/shop?filter=alarm-clock" },
-      { label: "Calculators", to: "/shop?filter=calculator" },
-      { label: "LED Lighting", to: "/shop?filter=led" },
-      { label: "Home Appliances", to: "/shop?filter=home-appliance" },
-      { label: "Electric Mosquito Rackets", to: "/shop?filter=mosquito-racket" },
-      { label: "Room Heaters", to: "/shop?filter=room-heater" },
-      { label: "Irons", to: "/shop?filter=iron" },
-      { label: "Electric Kettles", to: "/shop?filter=electric-kettle" },
-      { label: "Kitchen Appliances", to: "/shop?filter=kitchen-appliance" },
-    ]
-  },
-  {
-    label: "LIGHTING", to: "/shop?filter=led",
-    dropdown: [
-      { label: "Hand Torches", to: "/shop?filter=hand-torch" },
-      { label: "Emergency Lights", to: "/shop?filter=emergency-light" },
-      { label: "LED Lamps", to: "/shop?filter=led" },
-      { label: "LED Tubelights", to: "/shop?filter=led" },
-      { label: "LED Down / Panel Lights", to: "/shop?filter=led" },
-      { label: "LED Flood Lights", to: "/shop?filter=led" },
-      { label: "LED Street Lights", to: "/shop?filter=led" },
-    ]
-  },
-  {
-    label: "CLOCKS", to: "/shop?filter=clock",
-    dropdown: [
-      { label: "Simple Clocks", to: "/shop?filter=clock" },
-      { label: "Digital OLC Clocks", to: "/shop?filter=clock" },
-      { label: "Digital ODC Clocks", to: "/shop?filter=clock" },
-      { label: "Picture Dial Clocks", to: "/shop?filter=clock" },
-      { label: "Alarm Clocks", to: "/shop?filter=alarm-clock" },
-      { label: "Calculators", to: "/shop?filter=calculator" },
-    ]
-  },
-  {
-    label: "HOME APPLIANCES", to: "/shop?filter=home-appliance",
-    dropdown: [
-      { label: "Ceiling Fans", to: "/shop?filter=home-appliance" },
-      { label: "Ventilation Fans", to: "/shop?filter=home-appliance" },
-      { label: "Exhaust Fans", to: "/shop?filter=home-appliance" },
-      { label: "Table Fans", to: "/shop?filter=home-appliance" },
-      { label: "Wall Mounting Fans", to: "/shop?filter=home-appliance" },
-      { label: "Pedestal Fans", to: "/shop?filter=home-appliance" },
-      { label: "Electric Mosquito Rackets", to: "/shop?filter=mosquito-racket" },
-      { label: "Room Heaters", to: "/shop?filter=room-heater" },
-      { label: "Irons", to: "/shop?filter=iron" },
-      { label: "Electric Kettles", to: "/shop?filter=electric-kettle" },
-      { label: "Hand Blenders & Mixers", to: "/shop?filter=kitchen-appliance" },
-    ]
-  },
-];
-
-const secondaryLinks = [
-  { label: "About Brand", to: "/about" },
-  { label: "Contact", to: "/contact" },
-];
+import { useState, useEffect, useRef } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { createPortal } from 'react-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { removeFromCart, addToCart, updateQuantity } from '../store/cartSlice';
+import { toggleWishlist } from '../store/wishlistSlice';
+import { 
+  FiShoppingCart, FiHeart, FiMenu, FiX, FiSearch, FiUser, FiPhone, 
+  FiMapPin, FiChevronDown, FiPackage, FiCreditCard, FiGift, 
+  FiHeadphones, FiLogOut, FiTrash2, FiClock, FiZap,
+  FiWind, FiSun, FiHome, FiWatch
+} from 'react-icons/fi';
+import { motion, AnimatePresence } from 'framer-motion';
+import { MdAdd, MdRemove } from 'react-icons/md';
 
 export default function Navbar() {
-  const [activeDropdown, setActiveDropdown] = useState(null);
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [cartOpen, setCartOpen] = useState(false);
-  const [wishlistOpen, setWishlistOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [authOpen, setAuthOpen] = useState(false);
-  const [authMode, setAuthMode] = useState("login"); // "login" | "signup"
-  const [authForm, setAuthForm] = useState({ name: "", email: "", password: "", confirm: "" });
-  const [loggedInUser, setLoggedInUser] = useState(() => {
-    try { return JSON.parse(localStorage.getItem("ajanta_user")) || null; } catch { return null; }
-  });
-  const [accountMenuOpen, setAccountMenuOpen] = useState(false);
-  const searchRef = useRef(null);
-  const accountMenuRef = useRef(null);
-  const location = useLocation();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const { cartCount, cart, removeFromCart, updateQty, wishlistCount, wishlist, toggleWishlist } = useCart();
+  const location = useLocation();
+  
+  // Redux selectors
+  const cartItems = useSelector(state => state.cart.items);
+  const cartCount = useSelector(state => state.cart.totalQuantity);
+  const wishlistItems = useSelector(state => state.wishlist.items);
+  const wishlistCount = useSelector(state => state.wishlist.totalCount);
+  
+  const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isCartOpen, setIsCartOpen] = useState(false);
+  const [isWishlistOpen, setIsWishlistOpen] = useState(false);
+  const [isAccountOpen, setIsAccountOpen] = useState(false);
+  const [isCategoriesOpen, setIsCategoriesOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [buttonPositions, setButtonPositions] = useState({ cart: null, wishlist: null, account: null });
+  const cartRef = useRef(null);
+  const wishlistRef = useRef(null);
+  const accountRef = useRef(null);
+  const categoriesRef = useRef(null);
+  const navbarRef = useRef(null);
+
+  // Update button positions when dropdowns open
+  const updateButtonPosition = (ref, type) => {
+    if (ref.current) {
+      const rect = ref.current.getBoundingClientRect();
+      setButtonPositions(prev => ({
+        ...prev,
+        [type]: {
+          top: rect.bottom + 8, // Use viewport position instead of adding scrollY
+          right: window.innerWidth - rect.right,
+        }
+      }));
+    }
+  };
 
   useEffect(() => {
-    if (searchOpen && searchRef.current) searchRef.current.focus();
-  }, [searchOpen]);
-
-  useEffect(() => {
-    const handleClickOutside = (e) => {
-      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target)) {
-        setAccountMenuOpen(false);
+    let ticking = false;
+    let lastScrollY = window.scrollY;
+    
+    const handleScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          
+          // Set scrolled state based on scroll position with hysteresis
+          if (currentScrollY > 80 && !isScrolled) {
+            setIsScrolled(true);
+          } else if (currentScrollY < 40 && isScrolled) {
+            setIsScrolled(false);
+          }
+          
+          lastScrollY = currentScrollY;
+          ticking = false;
+        });
+        
+        ticking = true;
       }
     };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
+    
+    // Initial check
+    handleScroll();
+    
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isScrolled]);
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false);
+    setIsCartOpen(false);
+    setIsWishlistOpen(false);
+    setIsAccountOpen(false);
+    setIsCategoriesOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      // Check if click is inside any dropdown content (including portal-rendered ones)
+      const isInsideDropdown = event.target.closest('.dropdown-content');
+      
+      if (!isInsideDropdown) {
+        if (cartRef.current && !cartRef.current.contains(event.target)) {
+          setIsCartOpen(false);
+        }
+        if (wishlistRef.current && !wishlistRef.current.contains(event.target)) {
+          setIsWishlistOpen(false);
+        }
+        if (accountRef.current && !accountRef.current.contains(event.target)) {
+          setIsAccountOpen(false);
+        }
+        if (categoriesRef.current && !categoriesRef.current.contains(event.target)) {
+          setIsCategoriesOpen(false);
+        }
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSearchSubmit = (e) => {
+  const navLinks = [
+    { path: '/', label: 'Home' },
+    { path: '/shop', label: 'Shop' },
+    { path: '/about', label: 'About' },
+    { path: '/contact', label: 'Contact' },
+  ];
+
+  const [hoveredCategory, setHoveredCategory] = useState(0);
+
+  const categories = [
+    {
+      name: 'Wall Clocks',
+      icon: FiClock,
+      subcategories: [
+        {
+          title: 'By Style',
+          items: ['Analog Clocks', 'Digital Clocks', 'Decorative Clocks', 'Vintage Clocks', 'Modern Clocks', 'Minimalist']
+        },
+        {
+          title: 'By Material',
+          items: ['Wooden Clocks', 'Metal Clocks', 'Plastic Clocks', 'Glass Clocks']
+        },
+        {
+          title: 'By Size',
+          items: ['Small (6-10 inch)', 'Medium (10-14 inch)', 'Large (14+ inch)', 'Extra Large']
+        }
+      ]
+    },
+    {
+      name: 'Table Clocks',
+      icon: FiWatch,
+      subcategories: [
+        {
+          title: 'By Type',
+          items: ['Alarm Clocks', 'Desk Clocks', 'Travel Clocks', 'Smart Clocks', 'LED Clocks']
+        },
+        {
+          title: 'By Features',
+          items: ['Digital Display', 'Analog Display', 'Temperature Display', 'Calendar Display']
+        },
+        {
+          title: 'Popular',
+          items: ['Best Sellers', 'New Arrivals', 'Premium Collection']
+        }
+      ]
+    },
+    {
+      name: 'LED Lights',
+      icon: FiZap,
+      subcategories: [
+        {
+          title: 'Indoor Lighting',
+          items: ['Bulbs', 'Tube Lights', 'Panel Lights', 'Downlights', 'Ceiling Lights']
+        },
+        {
+          title: 'Smart Lighting',
+          items: ['Smart Bulbs', 'RGB Lights', 'Dimmable Lights', 'Voice Control']
+        },
+        {
+          title: 'Emergency',
+          items: ['Emergency Lights', 'Rechargeable Lights', 'Inverter Bulbs']
+        }
+      ]
+    },
+    {
+      name: 'Fans',
+      icon: FiWind,
+      subcategories: [
+        {
+          title: 'By Type',
+          items: ['Ceiling Fans', 'Table Fans', 'Wall Fans', 'Exhaust Fans', 'Pedestal Fans']
+        },
+        {
+          title: 'By Features',
+          items: ['BLDC Fans', 'Remote Control', 'Decorative Fans', 'High Speed Fans']
+        },
+        {
+          title: 'By Room',
+          items: ['Living Room', 'Bedroom', 'Kitchen', 'Bathroom']
+        }
+      ]
+    },
+    {
+      name: 'Torches',
+      icon: FiSun,
+      subcategories: [
+        {
+          title: 'By Type',
+          items: ['LED Torches', 'Rechargeable Torches', 'Emergency Lights', 'Lanterns', 'Headlamps']
+        },
+        {
+          title: 'By Power',
+          items: ['Battery Operated', 'USB Rechargeable', 'Solar Powered']
+        },
+        {
+          title: 'By Use',
+          items: ['Camping', 'Home Use', 'Professional', 'Tactical']
+        }
+      ]
+    },
+    {
+      name: 'Home Decor',
+      icon: FiHome,
+      subcategories: [
+        {
+          title: 'Wall Decor',
+          items: ['Photo Frames', 'Wall Art', 'Mirrors', 'Wall Shelves']
+        },
+        {
+          title: 'Table Decor',
+          items: ['Showpieces', 'Vases', 'Candle Holders', 'Figurines']
+        },
+        {
+          title: 'Collections',
+          items: ['Modern Collection', 'Traditional Collection', 'Vintage Collection']
+        }
+      ]
+    }
+  ];
+
+  const isActive = (path) => location.pathname === path;
+
+  const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchOpen(false);
-      setSearchQuery("");
+      navigate(`/shop?search=${encodeURIComponent(searchQuery)}`);
     }
   };
 
-  const handleAuthSubmit = (e) => {
-    e.preventDefault();
-    if (authMode === "login") {
-      const stored = JSON.parse(localStorage.getItem("ajanta_user"));
-      if (stored && stored.email === authForm.email && stored.password === authForm.password) {
-        setLoggedInUser(stored);
-        setAuthOpen(false);
-        setAuthForm({ name: "", email: "", password: "", confirm: "" });
-      } else {
-        alert("Invalid email or password.");
-      }
-    } else {
-      if (authForm.password !== authForm.confirm) { alert("Passwords do not match."); return; }
-      const user = { name: authForm.name, email: authForm.email, password: authForm.password };
-      localStorage.setItem("ajanta_user", JSON.stringify(user));
-      setLoggedInUser(user);
-      setAuthOpen(false);
-      setAuthForm({ name: "", email: "", password: "", confirm: "" });
-    }
-  };
-
-  const handleLogout = () => {
-    setLoggedInUser(null);
-    localStorage.removeItem("ajanta_user");
-  };
-
-
-
-  const currentFull = location.pathname + location.search;
-  const isActive = (to) => currentFull === to || decodeURIComponent(currentFull) === decodeURIComponent(to);
+  const cartTotal = cartItems.reduce((sum, item) => {
+    const price = parseFloat((item.price || "0").replace(/[^0-9.-]+/g, ''));
+    return sum + (price * item.qty);
+  }, 0);
 
   return (
-    <header className="w-full fixed top-0 left-0 right-0 z-50">
-      <nav className="w-full bg-[#cf2127] border-b border-[#cf2127] shadow-sm">
-        <div className="w-full px-6 lg:px-10 flex items-center h-[56px]">
-
-          {/* Logo — left */}
-          <Link to="/" className="flex-shrink-0 mr-10">
-            <img src="/Ajanta logo.png" alt="Ajanta Logo" className="h-[44px] object-contain" />
-          </Link>
-
-          {/* Main nav — center */}
-          <ul className="hidden lg:flex items-center flex-1 gap-1 h-full">
-            {mainLinks.map((link) => (
-              <li
-                key={link.label}
-                className="relative h-full flex items-center"
-                onMouseEnter={() => setActiveDropdown(link.label)}
-                onMouseLeave={() => setActiveDropdown(null)}
-              >
-                <Link
-                  to={link.to}
-                  className={`flex items-center gap-1 px-3 h-full text-[12px] font-semibold tracking-[0.1em] uppercase border-b-2 transition-all
-                    ${isActive(link.to) ? "border-white text-white" : "border-transparent text-white hover:text-white/80"}`}
-                >
-                  {link.label}
-                  {link.dropdown && (
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  )}
-                </Link>
-                {link.dropdown && activeDropdown === link.label && (
-                  <ul className="absolute top-full left-0 w-[200px] bg-white border border-gray-100 shadow-lg z-50 py-2">
-                    {link.dropdown.map((item) => (
-                      <li key={item.label}>
-                        <Link
-                          to={item.to}
-                          onClick={() => setActiveDropdown(null)}
-                          className="block px-5 py-2.5 text-[12px] text-gray-600 hover:bg-gray-50 hover:text-[#cf2127] transition-colors"
-                        >
-                          {item.label}
-                        </Link>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </li>
-            ))}
-          </ul>
-
-          {/* Right side — secondary links + icons */}
-          <div className="hidden lg:flex items-center gap-5 ml-auto">
-            {secondaryLinks.map(link => (
-              <Link
-                key={link.label}
-                to={link.to}
-                className={`text-[12px] font-medium tracking-wide transition-colors ${isActive(link.to) ? "text-white" : "text-white hover:text-white/80"}`}
-              >
-                {link.label}
-              </Link>
-            ))}
-
-            {/* Search */}
-            <button
-              onClick={() => setSearchOpen(v => !v)}
-              className="text-white hover:text-white/80 transition-colors"
-              aria-label="Search"
-            >
-              <svg fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-                <circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
-              </svg>
-            </button>
-
-            {/* Account */}
-            {loggedInUser ? (
-              <div className="relative" ref={accountMenuRef}>
-                <button
-                  onClick={() => setAccountMenuOpen(v => !v)}
-                  className="flex items-center gap-1.5 text-white hover:text-white/80 transition-colors"
-                  aria-label="Account"
-                >
-                  <svg fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                  </svg>
-                  <span className="text-[11px] font-semibold max-w-[70px] truncate">{loggedInUser.name}</span>
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {accountMenuOpen && (
-                  <div className="absolute right-0 top-full mt-2 w-[160px] bg-white shadow-lg border border-gray-100 py-1 z-50">
-                    <div className="px-4 py-2.5 border-b border-gray-100">
-                      <p className="text-[11px] text-gray-400 uppercase tracking-wider">Signed in as</p>
-                      <p className="text-[12px] font-semibold text-gray-700 truncate mt-0.5">{loggedInUser.name}</p>
-                    </div>
-                    <button
-                      onClick={() => { handleLogout(); setAccountMenuOpen(false); }}
-                      className="w-full text-left px-4 py-2.5 text-[12px] text-red-500 hover:bg-red-50 transition-colors flex items-center gap-2"
-                    >
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <button onClick={() => { setAuthMode("login"); setAuthOpen(true); }} className="text-white hover:text-white/80 transition-colors" aria-label="Account">
-                <svg fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" /><circle cx="12" cy="7" r="4" />
-                </svg>
+    <>
+      {/* Top Bar - Hides on scroll */}
+      <div 
+        className={`bg-gray-50 border-b border-gray-200 hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
+          isScrolled ? 'h-0 opacity-0 pointer-events-none' : 'h-10 opacity-100'
+        }`}
+        style={{ willChange: isScrolled ? 'auto' : 'height, opacity' }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+          <div className="flex items-center justify-between h-full text-xs">
+            <div className="flex items-center space-x-6 text-gray-600">
+              <a href="tel:+1234567890" className="flex items-center space-x-1 hover:text-[#cc0000] transition-colors">
+                <FiPhone className="w-3.5 h-3.5" />
+                <span>+91 1234567890</span>
+              </a>
+              <span className="text-gray-300">|</span>
+              <span className="flex items-center space-x-1">
+                <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+                <span>Free Shipping on Orders Above <span className="text-[#cc0000] font-semibold">₹999</span></span>
+              </span>
+            </div>
+            <div className="flex items-center space-x-4 text-gray-600">
+              <button className="flex items-center space-x-1 hover:text-[#cc0000] transition-colors">
+                <FiMapPin className="w-3.5 h-3.5" />
+                <span>Location</span>
+                <FiChevronDown className="w-3 h-3" />
               </button>
-            )}
-
-            {/* Wishlist */}
-            <button onClick={() => setWishlistOpen(true)} className="relative text-white hover:text-white/80 transition-colors" aria-label="Wishlist">
-              <svg fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-                <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-              </svg>
-              {wishlistCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-white text-[#cf2127] text-[9px] w-[15px] h-[15px] rounded-full flex items-center justify-center font-bold">{wishlistCount}</span>}
-            </button>
-
-            {/* Cart */}
-            <button onClick={() => setCartOpen(true)} className="relative text-white hover:text-white/80 transition-colors" aria-label="Cart">
-              <svg fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" />
-              </svg>
-              {cartCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-white text-[#cf2127] text-[9px] w-[15px] h-[15px] rounded-full flex items-center justify-center font-bold">{cartCount}</span>}
-            </button>
+            </div>
           </div>
+        </div>
+      </div>
 
-          {/* Mobile right */}
-          <div className="flex lg:hidden items-center gap-4 ml-auto text-white">
-            <button onClick={() => setCartOpen(true)} className="relative" aria-label="Cart">
-              <svg fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" width="22" height="22">
-                <path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z" /><line x1="3" y1="6" x2="21" y2="6" /><path d="M16 10a4 4 0 0 1-8 0" />
-              </svg>
-              {cartCount > 0 && <span className="absolute -top-1.5 -right-1.5 bg-[#cf2127] text-white text-[9px] w-[15px] h-[15px] rounded-full flex items-center justify-center font-bold">{cartCount}</span>}
-            </button>
-            <button onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                {mobileOpen
-                  ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M6 18L18 6M6 6l12 12" />
-                  : <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16" />}
-              </svg>
-            </button>
+      {/* Main Navbar - Logo Section (Hides on scroll) */}
+      <div 
+        className={`bg-white border-b border-gray-200 transition-all duration-300 ease-in-out overflow-hidden ${
+          isScrolled ? 'h-0 opacity-0 pointer-events-none' : 'h-20 opacity-100'
+        }`}
+        style={{ willChange: isScrolled ? 'auto' : 'height, opacity' }}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+          <div className="flex items-center justify-between h-full">
+                {/* Logo */}
+                <Link to="/" className="flex-shrink-0">
+                  <img
+                    src="/Ajanta logo.png"
+                    alt="Ajanta"
+                    className="h-12 w-auto"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                      e.target.nextSibling.style.display = 'block';
+                    }}
+                  />
+                  <span className="hidden text-2xl font-black text-[#1a1a1a]">AJANTA</span>
+                </Link>
+
+                {/* Desktop Search */}
+                <div className="hidden lg:flex flex-1 max-w-2xl mx-8">
+                  <form onSubmit={handleSearch} className="w-full relative">
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="What can we help you find today?"
+                      className="w-full pl-4 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#cc0000] focus:ring-1 focus:ring-[#cc0000] transition-all text-sm"
+                    />
+                    <button
+                      type="submit"
+                      className="absolute right-0 top-0 h-full px-4 bg-[#cc0000] text-white rounded-r-lg hover:bg-[#b30000] transition-colors"
+                    >
+                      <FiSearch className="w-5 h-5" />
+                    </button>
+                  </form>
+                </div>
+
+                {/* Desktop Icons */}
+                <div className="hidden lg:flex items-center space-x-1">
+              {/* Wishlist Dropdown */}
+              <div className="relative" ref={wishlistRef}>
+                <button
+                  onClick={() => {
+                    updateButtonPosition(wishlistRef, 'wishlist');
+                    setIsWishlistOpen(!isWishlistOpen);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors group"
+                >
+                  <div className="relative">
+                    <FiHeart className="w-5 h-5 text-gray-700 group-hover:text-[#cc0000] transition-colors" />
+                    {wishlistCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-[#cc0000] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {wishlistCount}
+                      </span>
+                    )}
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 group-hover:text-[#cc0000]">Wishlist</span>
+                  <FiChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isWishlistOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              {/* Wishlist Dropdown Portal */}
+              {isWishlistOpen && buttonPositions.wishlist && createPortal(
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="dropdown-content fixed w-96 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-[9999]"
+                    style={{
+                      top: `${buttonPositions.wishlist.top}px`,
+                      right: `${buttonPositions.wishlist.right}px`,
+                    }}
+                  >
+                      <div className="p-4 border-b border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-bold text-gray-900">Your wishlist</h3>
+                          <span className="text-sm text-gray-500">{wishlistCount} items</span>
+                        </div>
+                      </div>
+                      
+                      {wishlistItems.length > 0 ? (
+                        <>
+                          <div className="max-h-96 overflow-y-auto">
+                            {wishlistItems.map((item) => (
+                              <div key={item.id} className="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <div className="flex items-center space-x-4">
+                                  <img src={item.images?.[0] || item.img} alt={item.title} className="w-16 h-16 object-cover rounded-lg" />
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-semibold text-gray-900 truncate">{item.title}</h4>
+                                    <p className="text-sm font-bold text-gray-900 mt-1">{item.price}</p>
+                                  </div>
+                                  <div className="flex flex-col gap-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        dispatch(addToCart({ product: item, qty: 1 }));
+                                        dispatch(toggleWishlist(item)); // Remove from wishlist
+                                      }}
+                                      className="text-[#cc0000] hover:text-[#b30000] p-1 hover:bg-red-50 rounded transition-colors"
+                                      title="Add to Cart"
+                                    >
+                                      <FiShoppingCart className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        dispatch(toggleWishlist(item));
+                                      }}
+                                      className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded transition-colors"
+                                      title="Remove from Wishlist"
+                                    >
+                                      <FiTrash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="p-4 bg-gray-50">
+                            <Link
+                              to="/shop"
+                              className="block w-full bg-[#cc0000] text-white text-center py-3 rounded-lg font-semibold hover:bg-[#b30000] transition-colors"
+                              onClick={() => setIsWishlistOpen(false)}
+                            >
+                              Continue Shopping
+                            </Link>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="p-8 text-center">
+                          <FiHeart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                          <p className="text-gray-500">Your wishlist is empty</p>
+                          <Link
+                            to="/shop"
+                            className="inline-block mt-4 text-[#cc0000] font-semibold hover:underline"
+                            onClick={() => setIsWishlistOpen(false)}
+                          >
+                            Start Shopping
+                          </Link>
+                        </div>
+                      )}
+                    </motion.div>
+                </AnimatePresence>,
+                document.body
+              )}
+
+              {/* Cart Dropdown */}
+              <div className="relative" ref={cartRef}>
+                <button
+                  onClick={() => {
+                    updateButtonPosition(cartRef, 'cart');
+                    setIsCartOpen(!isCartOpen);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors group"
+                >
+                  <div className="relative">
+                    <FiShoppingCart className="w-5 h-5 text-gray-700 group-hover:text-[#cc0000] transition-colors" />
+                    {cartCount > 0 && (
+                      <span className="absolute -top-2 -right-2 bg-[#cc0000] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                        {cartCount}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <div className="text-sm font-medium text-gray-700 group-hover:text-[#cc0000]">My Cart</div>
+                  </div>
+                  <FiChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isCartOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              {/* Cart Dropdown Portal */}
+              {isCartOpen && buttonPositions.cart && createPortal(
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="dropdown-content fixed w-96 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-[9999]"
+                    style={{
+                      top: `${buttonPositions.cart.top}px`,
+                      right: `${buttonPositions.cart.right}px`,
+                    }}
+                  >
+                      <div className="p-4 border-b border-gray-200">
+                        <div className="flex items-center justify-between">
+                          <h3 className="text-lg font-bold text-gray-900">Your shopping cart</h3>
+                          <span className="text-sm text-gray-500">{cartCount} items</span>
+                        </div>
+                      </div>
+                      
+                      {cartItems.length > 0 ? (
+                        <>
+                          <div className="max-h-[200px] overflow-y-auto">
+                            {cartItems.map((item) => (
+                              <div key={item.id} className="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                <div className="flex items-start space-x-4">
+                                  <img src={item.images?.[0] || item.img} alt={item.title} className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
+                                  <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-semibold text-gray-900 truncate mb-2">{item.title}</h4>
+                                    <p className="text-sm font-bold text-gray-900 mb-2">{item.price}</p>
+                                    {/* Quantity Controls */}
+                                    <div className="flex items-center gap-2">
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (item.qty > 1) {
+                                            dispatch(updateQuantity({ id: item.id, qty: item.qty - 1 }));
+                                          } else {
+                                            dispatch(updateQuantity({ id: item.id, qty: 0 }));
+                                          }
+                                        }}
+                                        className="w-7 h-7 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                                      >
+                                        <MdRemove className="text-gray-700" />
+                                      </button>
+                                      <span className="text-sm font-semibold text-gray-900 min-w-[24px] text-center">{item.qty}</span>
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          dispatch(updateQuantity({ id: item.id, qty: item.qty + 1 }));
+                                        }}
+                                        className="w-7 h-7 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                                      >
+                                        <MdAdd className="text-gray-700" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      dispatch(removeFromCart(item.id));
+                                    }}
+                                    className="text-[#cc0000] hover:text-[#b30000] flex-shrink-0"
+                                  >
+                                    <FiTrash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          <div className="p-4 bg-gray-50 border-t border-gray-200">
+                            <div className="space-y-2 mb-4">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Subtotal</span>
+                                <span className="font-semibold text-gray-900">₹{cartTotal.toFixed(2)}</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-gray-600">Shipping</span>
+                                <span className="font-semibold text-green-600">
+                                  {cartTotal >= 999 ? 'FREE' : '₹50.00'}
+                                </span>
+                              </div>
+                              <div className="h-px bg-gray-200 my-2"></div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-base font-semibold text-gray-900">Total</span>
+                                <span className="text-xl font-bold text-gray-900">
+                                  ₹{(cartTotal + (cartTotal >= 999 ? 0 : 50)).toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                            <Link
+                              to="/checkout"
+                              className="block w-full bg-[#cc0000] text-white text-center py-3 rounded-lg font-semibold hover:bg-[#b30000] transition-colors"
+                              onClick={() => setIsCartOpen(false)}
+                            >
+                              View Cart & Checkout
+                            </Link>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="p-8 text-center">
+                          <FiShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                          <p className="text-gray-500">Your cart is empty</p>
+                          <Link
+                            to="/shop"
+                            className="inline-block mt-4 text-[#cc0000] font-semibold hover:underline"
+                            onClick={() => setIsCartOpen(false)}
+                          >
+                            Start Shopping
+                          </Link>
+                        </div>
+                      )}
+                    </motion.div>
+                </AnimatePresence>,
+                document.body
+              )}
+
+              {/* Account Dropdown */}
+              <div className="relative" ref={accountRef}>
+                <button
+                  onClick={() => {
+                    updateButtonPosition(accountRef, 'account');
+                    setIsAccountOpen(!isAccountOpen);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 hover:bg-gray-50 rounded-lg transition-colors group"
+                >
+                  <FiUser className="w-5 h-5 text-gray-700 group-hover:text-[#cc0000] transition-colors" />
+                  <div className="text-left">
+                    <div className="text-sm font-medium text-gray-700 group-hover:text-[#cc0000]">Account</div>
+                  </div>
+                  <FiChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isAccountOpen ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
+              {/* Account Dropdown Portal */}
+              {isAccountOpen && buttonPositions.account && createPortal(
+                <AnimatePresence>
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    className="dropdown-content fixed w-72 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-[9999]"
+                    style={{
+                      top: `${buttonPositions.account.top}px`,
+                      right: `${buttonPositions.account.right}px`,
+                    }}
+                  >
+                      <div className="p-4 bg-gray-50 border-b border-gray-200">
+                        <div className="flex items-center space-x-3">
+                          <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
+                            <FiUser className="w-6 h-6 text-gray-600" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-gray-900">Guest User</p>
+                            <p className="text-xs text-gray-500">guest@ajanta.com</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="p-2">
+                        <Link
+                          to="/account"
+                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                          onClick={() => setIsAccountOpen(false)}
+                        >
+                          <FiUser className="w-5 h-5 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-700">My Account</span>
+                        </Link>
+                        <Link
+                          to="/orders"
+                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                          onClick={() => setIsAccountOpen(false)}
+                        >
+                          <FiPackage className="w-5 h-5 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-700">My Orders</span>
+                        </Link>
+                        <Link
+                          to="/wallet"
+                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                          onClick={() => setIsAccountOpen(false)}
+                        >
+                          <FiCreditCard className="w-5 h-5 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-700">My Wallet</span>
+                        </Link>
+                        <Link
+                          to="/checkout"
+                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                          onClick={() => setIsAccountOpen(false)}
+                        >
+                          <FiHeart className="w-5 h-5 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-700">Favourite Items</span>
+                        </Link>
+                        <Link
+                          to="/vouchers"
+                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                          onClick={() => setIsAccountOpen(false)}
+                        >
+                          <FiGift className="w-5 h-5 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-700">Vouchers & Gift Cards</span>
+                        </Link>
+                        <Link
+                          to="/contact"
+                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                          onClick={() => setIsAccountOpen(false)}
+                        >
+                          <FiHeadphones className="w-5 h-5 text-gray-600" />
+                          <span className="text-sm font-medium text-gray-700">Service</span>
+                        </Link>
+                      </div>
+                      
+                      <div className="p-2 border-t border-gray-200">
+                        <button className="flex items-center space-x-3 px-4 py-3 hover:bg-red-50 rounded-lg transition-colors w-full text-left">
+                          <FiLogOut className="w-5 h-5 text-[#cc0000]" />
+                          <span className="text-sm font-medium text-[#cc0000]">Sign Out</span>
+                        </button>
+                      </div>
+                    </motion.div>
+                </AnimatePresence>,
+                document.body
+              )}
+            </div>
+
+            {/* Mobile Icons */}
+            <div className="flex lg:hidden items-center space-x-2">
+              <button className="p-2 hover:bg-gray-100 rounded-lg">
+                <FiSearch className="w-5 h-5 text-gray-700" />
+              </button>
+              <Link to="/checkout" className="relative p-2 hover:bg-gray-100 rounded-lg">
+                <FiShoppingCart className="w-5 h-5 text-gray-700" />
+                {cartCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-[#cc0000] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="p-2 hover:bg-gray-100 rounded-lg"
+              >
+                {isMobileMenuOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
+              </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Search Bar — drops below navbar */}
-        {searchOpen && (
-          <div className="w-full bg-[#b01c21] px-6 lg:px-10 py-3 border-t border-white/10">
-            <form onSubmit={handleSearchSubmit} className="flex items-center gap-3 max-w-xl mx-auto">
-              <input
-                ref={searchRef}
-                type="text"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Search products..."
-                className="flex-1 bg-white/10 border border-white/30 text-white placeholder-white/50 text-[13px] px-4 py-2 outline-none focus:bg-white/20 transition-all"
-              />
-              <button type="submit" className="bg-white text-[#cf2127] px-4 py-2 text-[11px] font-bold tracking-widest uppercase hover:bg-gray-100 transition-colors">
-                Search
-              </button>
-              <button type="button" onClick={() => { setSearchOpen(false); setSearchQuery(""); }} className="text-white/60 hover:text-white transition-colors">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </form>
+      {/* Sticky Section - Category Bar & Compact Nav */}
+      <div 
+        ref={navbarRef}
+        className="sticky top-0 z-[200] bg-white shadow-md transition-shadow duration-300"
+        style={{ willChange: 'box-shadow' }}
+      >
+        {/* Compact Navbar - Shows when scrolled */}
+        <div 
+          className={`border-b border-gray-200 hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
+            isScrolled ? 'h-16 opacity-100' : 'h-0 opacity-0 pointer-events-none'
+          }`}
+          style={{ willChange: isScrolled ? 'height, opacity' : 'auto' }}
+        >
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
+            <div className="flex items-center justify-between h-full">
+                  {/* Compact Logo */}
+                  <Link to="/" className="flex-shrink-0">
+                    <img
+                      src="/Ajanta logo.png"
+                      alt="Ajanta"
+                      className="h-8 w-auto"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'block';
+                      }}
+                    />
+                    <span className="hidden text-xl font-black text-[#1a1a1a]">AJANTA</span>
+                  </Link>
+
+                  {/* Compact Search */}
+                  <div className="flex-1 max-w-xl mx-8">
+                    <form onSubmit={handleSearch} className="w-full relative">
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder="Search products..."
+                        className="w-full pl-4 pr-12 py-2 bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#cc0000] focus:ring-1 focus:ring-[#cc0000] transition-all text-sm"
+                      />
+                      <button
+                        type="submit"
+                        className="absolute right-0 top-0 h-full px-4 bg-[#cc0000] text-white rounded-r-lg hover:bg-[#b30000] transition-colors"
+                      >
+                        <FiSearch className="w-4 h-4" />
+                      </button>
+                    </form>
+                  </div>
+
+                  {/* Compact Icons */}
+                  <div className="flex items-center space-x-1">
+                    {/* Wishlist */}
+                    <div className="relative" ref={wishlistRef}>
+                      <button
+                        onClick={() => setIsWishlistOpen(!isWishlistOpen)}
+                        className="relative p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <FiHeart className="w-5 h-5 text-gray-700" />
+                        {wishlistCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-[#cc0000] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                            {wishlistCount}
+                          </span>
+                        )}
+                      </button>
+                    </div>
+
+                    {/* Cart */}
+                    <div className="relative" ref={cartRef}>
+                      <button
+                        onClick={() => setIsCartOpen(!isCartOpen)}
+                        className="relative p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <FiShoppingCart className="w-5 h-5 text-gray-700" />
+                        {cartCount > 0 && (
+                          <span className="absolute -top-1 -right-1 bg-[#cc0000] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                            {cartCount}
+                          </span>
+                        )}
+                      </button>
+
+                      {/* Cart Dropdown */}
+                      <AnimatePresence>
+                        {isCartOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="dropdown-content absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-[300]"
+                          >
+                            <div className="p-4 border-b border-gray-200">
+                              <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold text-gray-900">Your shopping cart</h3>
+                                <span className="text-sm text-gray-500">{cartCount} items</span>
+                              </div>
+                            </div>
+                            
+                            {cartItems.length > 0 ? (
+                              <>
+                                <div className="max-h-[200px] overflow-y-auto">
+                                  {cartItems.map((item) => (
+                                    <div key={item.id} className="p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                                      <div className="flex items-start space-x-4">
+                                        <img src={item.images?.[0] || item.img} alt={item.title} className="w-16 h-16 object-cover rounded-lg flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                          <h4 className="text-sm font-semibold text-gray-900 truncate mb-2">{item.title}</h4>
+                                          <p className="text-sm font-bold text-gray-900 mb-2">{item.price}</p>
+                                          {/* Quantity Controls */}
+                                          <div className="flex items-center gap-2">
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                if (item.qty > 1) {
+                                                  dispatch(updateQuantity({ id: item.id, qty: item.qty - 1 }));
+                                                } else {
+                                                  dispatch(updateQuantity({ id: item.id, qty: 0 }));
+                                                }
+                                              }}
+                                              className="w-7 h-7 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                                            >
+                                              <MdRemove className="text-gray-700" />
+                                            </button>
+                                            <span className="text-sm font-semibold text-gray-900 min-w-[24px] text-center">{item.qty}</span>
+                                            <button
+                                              onClick={(e) => {
+                                                e.stopPropagation();
+                                                dispatch(updateQuantity({ id: item.id, qty: item.qty + 1 }));
+                                              }}
+                                              className="w-7 h-7 flex items-center justify-center bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
+                                            >
+                                              <MdAdd className="text-gray-700" />
+                                            </button>
+                                          </div>
+                                        </div>
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            dispatch(removeFromCart(item.id));
+                                          }}
+                                          className="text-[#cc0000] hover:text-[#b30000] flex-shrink-0"
+                                        >
+                                          <FiTrash2 className="w-4 h-4" />
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                <div className="p-4 bg-gray-50 border-t border-gray-200">
+                                  <div className="space-y-2 mb-4">
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span className="text-gray-600">Subtotal</span>
+                                      <span className="font-semibold text-gray-900">₹{cartTotal.toFixed(2)}</span>
+                                    </div>
+                                    <div className="flex items-center justify-between text-sm">
+                                      <span className="text-gray-600">Shipping</span>
+                                      <span className="font-semibold text-green-600">
+                                        {cartTotal >= 999 ? 'FREE' : '₹50.00'}
+                                      </span>
+                                    </div>
+                                    <div className="h-px bg-gray-200 my-2"></div>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-base font-semibold text-gray-900">Total</span>
+                                      <span className="text-xl font-bold text-gray-900">
+                                        ₹{(cartTotal + (cartTotal >= 999 ? 0 : 50)).toFixed(2)}
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Link
+                                    to="/checkout"
+                                    className="block w-full bg-[#cc0000] text-white text-center py-3 rounded-lg font-semibold hover:bg-[#b30000] transition-colors"
+                                    onClick={() => setIsCartOpen(false)}
+                                  >
+                                    View Cart & Checkout
+                                  </Link>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="p-8 text-center">
+                                <FiShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                                <p className="text-gray-500">Your cart is empty</p>
+                                <Link
+                                  to="/shop"
+                                  className="inline-block mt-4 text-[#cc0000] font-semibold hover:underline"
+                                  onClick={() => setIsCartOpen(false)}
+                                >
+                                  Start Shopping
+                                </Link>
+                              </div>
+                            )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+
+                    {/* Account */}
+                    <div className="relative" ref={accountRef}>
+                      <button
+                        onClick={() => setIsAccountOpen(!isAccountOpen)}
+                        className="relative p-2 hover:bg-gray-50 rounded-lg transition-colors"
+                      >
+                        <FiUser className="w-5 h-5 text-gray-700" />
+                      </button>
+
+                      {/* Account Dropdown */}
+                      <AnimatePresence>
+                        {isAccountOpen && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            className="dropdown-content absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-[300]"
+                          >
+                            <div className="p-4 bg-gray-50 border-b border-gray-200">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
+                                  <FiUser className="w-6 h-6 text-gray-600" />
+                                </div>
+                                <div>
+                                  <p className="font-semibold text-gray-900">Guest User</p>
+                                  <p className="text-xs text-gray-500">guest@ajanta.com</p>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            <div className="p-2">
+                              <Link to="/account" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                                <FiUser className="w-5 h-5 text-gray-600" />
+                                <span className="text-sm font-medium text-gray-700">My Account</span>
+                              </Link>
+                              <Link to="/orders" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                                <FiPackage className="w-5 h-5 text-gray-600" />
+                                <span className="text-sm font-medium text-gray-700">My Orders</span>
+                              </Link>
+                              <Link to="/wallet" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                                <FiCreditCard className="w-5 h-5 text-gray-600" />
+                                <span className="text-sm font-medium text-gray-700">My Wallet</span>
+                              </Link>
+                              <Link to="/checkout" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                                <FiHeart className="w-5 h-5 text-gray-600" />
+                                <span className="text-sm font-medium text-gray-700">Favourite Items</span>
+                              </Link>
+                            </div>
+                            
+                            <div className="p-2 border-t border-gray-200">
+                              <button className="flex items-center space-x-3 px-4 py-3 hover:bg-red-50 rounded-lg transition-colors w-full text-left">
+                                <FiLogOut className="w-5 h-5 text-[#cc0000]" />
+                                <span className="text-sm font-medium text-[#cc0000]">Sign Out</span>
+                              </button>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+        {/* Category Bar - Always Visible */}
+        <div className="border-b border-gray-200 hidden lg:block bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex items-center space-x-8 h-12">
+              {/* All Categories Dropdown */}
+              <div className="relative" ref={categoriesRef}>
+                <button
+                  onClick={() => {
+                    setIsCategoriesOpen(!isCategoriesOpen);
+                  }}
+                  className="flex items-center space-x-2 text-sm font-semibold text-gray-700 hover:text-[#cc0000] transition-colors"
+                >
+                  <FiMenu className="w-4 h-4" />
+                  <span>All Categories</span>
+                  <FiChevronDown className={`w-4 h-4 transition-transform ${isCategoriesOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {/* Mega Menu - Sidebar Style */}
+                <AnimatePresence>
+                  {isCategoriesOpen && (
+                    <>
+                      {/* Backdrop */}
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[250]"
+                        style={{ top: isScrolled ? '4rem' : '8rem' }}
+                        onClick={() => setIsCategoriesOpen(false)}
+                      />
+                      
+                      {/* Mega Menu Content */}
+                      <motion.div
+                        initial={{ opacity: 0, y: -20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -20 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute left-0 top-full bg-white shadow-2xl z-[260]"
+                        style={{ width: '1000px', left: '0' }}
+                      >
+                        <div className="flex">
+                          {/* Left Sidebar - Main Categories */}
+                          <div className="w-64 bg-gray-50 border-r border-gray-200">
+                            {categories.map((category, index) => {
+                              const IconComponent = category.icon;
+                              return (
+                                <button
+                                  key={index}
+                                  onMouseEnter={() => setHoveredCategory(index)}
+                                  onClick={() => {
+                                    setHoveredCategory(index);
+                                  }}
+                                  className={`w-full flex items-center space-x-3 px-6 py-4 text-left transition-all duration-200 border-l-4 ${
+                                    hoveredCategory === index
+                                      ? 'bg-white border-[#cc0000] text-[#cc0000]'
+                                      : 'border-transparent text-gray-700 hover:bg-white hover:text-[#cc0000]'
+                                  }`}
+                                >
+                                  <IconComponent className="w-5 h-5 flex-shrink-0" />
+                                  <span className="font-medium text-sm">{category.name}</span>
+                                  <FiChevronDown className="w-4 h-4 ml-auto -rotate-90" />
+                                </button>
+                              );
+                            })}
+                          </div>
+
+                          {/* Right Content - Subcategories */}
+                          <div className="flex-1 p-8">
+                            <AnimatePresence mode="wait">
+                              <motion.div
+                                key={hoveredCategory}
+                                initial={{ opacity: 0, x: 20 }}
+                                animate={{ opacity: 1, x: 0 }}
+                                exit={{ opacity: 0, x: -20 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                {/* Category Title */}
+                                <div className="mb-6">
+                                  <h2 className="text-2xl font-bold text-gray-900 mb-1">
+                                    {categories[hoveredCategory].name}
+                                  </h2>
+                                  <p className="text-sm text-gray-500">
+                                    Explore our collection of {categories[hoveredCategory].name.toLowerCase()}
+                                  </p>
+                                </div>
+
+                                {/* Subcategories Grid */}
+                                <div className="grid grid-cols-3 gap-8">
+                                  {categories[hoveredCategory].subcategories.map((subcategory, subIndex) => (
+                                    <div key={subIndex}>
+                                      <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide">
+                                        {subcategory.title}
+                                      </h3>
+                                      <ul className="space-y-2">
+                                        {subcategory.items.map((item, itemIndex) => (
+                                          <li key={itemIndex}>
+                                            <Link
+                                              to={`/shop?category=${item.toLowerCase().replace(/ /g, '-')}`}
+                                              className="text-sm text-gray-600 hover:text-[#cc0000] transition-colors block py-1"
+                                              onClick={() => setIsCategoriesOpen(false)}
+                                            >
+                                              {item}
+                                            </Link>
+                                          </li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* View All Link */}
+                                <div className="mt-8 pt-6 border-t border-gray-200">
+                                  <Link
+                                    to={`/shop?category=${categories[hoveredCategory].name.toLowerCase().replace(/ /g, '-')}`}
+                                    className="inline-flex items-center space-x-2 text-[#cc0000] font-semibold hover:underline"
+                                    onClick={() => setIsCategoriesOpen(false)}
+                                  >
+                                    <span>View All {categories[hoveredCategory].name}</span>
+                                    <span>→</span>
+                                  </Link>
+                                </div>
+                              </motion.div>
+                            </AnimatePresence>
+                          </div>
+                        </div>
+                      </motion.div>
+                    </>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {navLinks.map((link) => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`text-sm font-medium transition-colors ${
+                    isActive(link.path) ? 'text-[#cc0000]' : 'text-gray-700 hover:text-[#cc0000]'
+                  }`}
+                >
+                  {link.label}
+                </Link>
+              ))}
+              <Link to="/shop" className="text-sm font-medium text-[#cc0000] hover:text-[#b30000] transition-colors">
+                Deal of the Day
+              </Link>
+            </div>
           </div>
-        )}
+        </div>
 
         {/* Mobile Menu */}
-        {mobileOpen && (
-          <div className="lg:hidden border-t border-gray-100 bg-white">
-            {[...mainLinks, ...secondaryLinks].map((link) => (
-              <div key={link.label} className="border-b border-gray-50">
-                <Link
-                  to={link.to}
-                  onClick={() => setMobileOpen(false)}
-                  className={`block px-6 py-4 text-[13px] font-semibold tracking-wide ${isActive(link.to) ? "text-[#cf2127]" : "text-gray-700 hover:text-[#cf2127]"}`}
-                >
-                  {link.label}
-                </Link>
+        <AnimatePresence>
+          {isMobileMenuOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="lg:hidden border-t border-gray-200 overflow-hidden"
+            >
+              <div className="p-4 space-y-2">
+                {navLinks.map((link) => (
+                  <Link
+                    key={link.path}
+                    to={link.path}
+                    className={`block px-4 py-3 rounded-lg text-sm font-semibold transition-colors ${
+                      isActive(link.path) ? 'bg-[#cc0000] text-white' : 'text-gray-700 hover:bg-gray-100'
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                ))}
               </div>
-            ))}
-          </div>
-        )}
-      </nav>
-
-
-
-      {/* Cart Drawer */}
-      {cartOpen && (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setCartOpen(false)} />
-          <div className="relative bg-white w-full max-w-sm h-full flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-[13px] font-black uppercase tracking-widest">Cart ({cartCount})</h2>
-              <button onClick={() => setCartOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
-              {cart.length === 0 ? (
-                <p className="text-center text-gray-400 text-[13px] mt-10">Your cart is empty</p>
-              ) : cart.map(item => (
-                <div key={item.id} className="flex gap-3 items-start">
-                  <img src={item.img} alt={item.title} className="w-16 h-16 object-cover bg-gray-100 shrink-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-[#1a1a1a] line-clamp-2">{item.title}</p>
-                    <p className="text-[12px] text-[#cf2127] font-bold mt-0.5">{item.price}</p>
-                    <div className="flex items-center gap-2 mt-1.5">
-                      <button onClick={() => updateQty(item.id, item.qty - 1)} className="w-6 h-6 border border-gray-200 flex items-center justify-center text-sm hover:bg-gray-50">−</button>
-                      <span className="text-[12px] font-bold w-5 text-center">{item.qty}</span>
-                      <button onClick={() => updateQty(item.id, item.qty + 1)} className="w-6 h-6 border border-gray-200 flex items-center justify-center text-sm hover:bg-gray-50">+</button>
-                    </div>
-                  </div>
-                  <button onClick={() => removeFromCart(item.id)} className="text-gray-300 hover:text-red-500 transition-colors mt-0.5">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-            {cart.length > 0 && (
-              <div className="px-5 py-4 border-t border-gray-100">
-                <div className="flex justify-between text-[13px] font-bold mb-3">
-                  <span>Total</span>
-                  <span>₹{cart.reduce((s, i) => s + (parseInt((i.price || "0").replace(/[^\d]/g, "")) * i.qty), 0).toLocaleString("en-IN")}</span>
-                </div>
-                <button
-                  onClick={() => { setCartOpen(false); navigate("/checkout"); }}
-                  className="w-full bg-[#cf2127] text-white py-3 text-[11px] font-bold tracking-widest uppercase hover:bg-[#a01a1f] transition-colors">
-                  Checkout
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* Wishlist Drawer */}
-      {wishlistOpen && (
-        <div className="fixed inset-0 z-[100] flex justify-end">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setWishlistOpen(false)} />
-          <div className="relative bg-white w-full max-w-sm h-full flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
-              <h2 className="text-[13px] font-black uppercase tracking-widest">Wishlist ({wishlistCount})</h2>
-              <button onClick={() => setWishlistOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-            <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-4">
-              {wishlist.length === 0 ? (
-                <p className="text-center text-gray-400 text-[13px] mt-10">Your wishlist is empty</p>
-              ) : wishlist.map(item => (
-                <div key={item.id} className="flex gap-3 items-start">
-                  <img src={item.img} alt={item.title} className="w-16 h-16 object-cover bg-gray-100 shrink-0 cursor-pointer" onClick={() => { navigate(`/product/${item.id}`); setWishlistOpen(false); }} />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-[12px] font-semibold text-[#1a1a1a] line-clamp-2 cursor-pointer hover:text-[#cf2127]" onClick={() => { navigate(`/product/${item.id}`); setWishlistOpen(false); }}>{item.title}</p>
-                    <p className="text-[12px] text-[#cf2127] font-bold mt-0.5">{item.price}</p>
-                  </div>
-                  <button onClick={() => toggleWishlist(item)} className="text-gray-300 hover:text-red-500 transition-colors mt-0.5">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Auth Modal */}
-      {authOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center px-4">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setAuthOpen(false)} />
-          <div className="relative bg-white w-full max-w-[380px] shadow-2xl z-10">
-            {/* Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-              <div className="flex gap-0">
-                <button
-                  onClick={() => setAuthMode("login")}
-                  className={`text-[13px] font-bold tracking-widest uppercase px-4 py-1.5 transition-colors ${authMode === "login" ? "bg-[#cf2127] text-white" : "text-gray-400 hover:text-gray-700"}`}
-                >
-                  Login
-                </button>
-                <button
-                  onClick={() => setAuthMode("signup")}
-                  className={`text-[13px] font-bold tracking-widest uppercase px-4 py-1.5 transition-colors ${authMode === "signup" ? "bg-[#cf2127] text-white" : "text-gray-400 hover:text-gray-700"}`}
-                >
-                  Sign Up
-                </button>
-              </div>
-              <button onClick={() => setAuthOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-              </button>
-            </div>
-
-            {/* Form */}
-            <form onSubmit={handleAuthSubmit} className="px-6 py-6 flex flex-col gap-4">
-              {authMode === "signup" && (
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Full Name</label>
-                  <input
-                    type="text"
-                    required
-                    value={authForm.name}
-                    onChange={e => setAuthForm(f => ({ ...f, name: e.target.value }))}
-                    placeholder="Your name"
-                    className="w-full border border-gray-200 px-3 py-2.5 text-[13px] outline-none focus:border-[#cf2127] transition-colors"
-                  />
-                </div>
-              )}
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Email</label>
-                <input
-                  type="email"
-                  required
-                  value={authForm.email}
-                  onChange={e => setAuthForm(f => ({ ...f, email: e.target.value }))}
-                  placeholder="you@example.com"
-                  className="w-full border border-gray-200 px-3 py-2.5 text-[13px] outline-none focus:border-[#cf2127] transition-colors"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Password</label>
-                <input
-                  type="password"
-                  required
-                  value={authForm.password}
-                  onChange={e => setAuthForm(f => ({ ...f, password: e.target.value }))}
-                  placeholder="••••••••"
-                  className="w-full border border-gray-200 px-3 py-2.5 text-[13px] outline-none focus:border-[#cf2127] transition-colors"
-                />
-              </div>
-              {authMode === "signup" && (
-                <div>
-                  <label className="block text-[11px] font-semibold text-gray-500 uppercase tracking-wider mb-1.5">Confirm Password</label>
-                  <input
-                    type="password"
-                    required
-                    value={authForm.confirm}
-                    onChange={e => setAuthForm(f => ({ ...f, confirm: e.target.value }))}
-                    placeholder="••••••••"
-                    className="w-full border border-gray-200 px-3 py-2.5 text-[13px] outline-none focus:border-[#cf2127] transition-colors"
-                  />
-                </div>
-              )}
-              <button
-                type="submit"
-                className="w-full bg-[#cf2127] text-white py-3 text-[11px] font-bold tracking-widest uppercase hover:bg-[#a01a1f] transition-colors mt-1"
-              >
-                {authMode === "login" ? "Login" : "Create Account"}
-              </button>
-              <p className="text-center text-[12px] text-gray-400">
-                {authMode === "login" ? "Don't have an account? " : "Already have an account? "}
-                <button type="button" onClick={() => setAuthMode(authMode === "login" ? "signup" : "login")} className="text-[#cf2127] font-semibold hover:underline">
-                  {authMode === "login" ? "Sign Up" : "Login"}
-                </button>
-              </p>
-            </form>
-          </div>
-        </div>
-      )}
-    </header>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
   );
 }

@@ -1,9 +1,12 @@
 ﻿import { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import { allProducts } from "../data/products";
-import { useCart } from "../context/CartContext";
-import { MdLocalShipping, MdLock, MdVerifiedUser, MdReplay } from "react-icons/md";
+import { addToCart, updateQuantity } from "../store/cartSlice";
+import { toggleWishlist } from "../store/wishlistSlice";
+import { MdLocalShipping, MdLock, MdVerifiedUser, MdReplay, MdTrendingUp, MdRemoveRedEye, MdStar, MdStarBorder, MdFavoriteBorder, MdFavorite, MdAdd, MdRemove, MdShoppingCart, MdFlashOn } from "react-icons/md";
+import { FaTruck, FaShieldAlt, FaUndo, FaAward } from "react-icons/fa";
 
 const initialReviews = [
   { name: "Rahul Sharma", date: "08/05/2025", rating: 4, text: "Best gift! Look great, value for money, quality best." },
@@ -11,13 +14,15 @@ const initialReviews = [
   { name: "Anita Halder", date: "06/15/2025", rating: 4, text: "Beautiful watch. Loved the design and finish. Highly recommend." },
 ];
 
-function Stars({ rating, size = "w-4 h-4" }) {
+function Stars({ rating, size = "w-5 h-5" }) {
   return (
-    <div className="flex items-center gap-0.5">
+    <div className="flex items-center gap-1">
       {[1,2,3,4,5].map(i => (
-        <svg key={i} className={`${size} ${i <= rating ? "text-amber-400" : "text-gray-200"}`} fill="currentColor" viewBox="0 0 20 20">
-          <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-        </svg>
+        i <= rating ? (
+          <MdStar key={i} className={`${size} text-amber-400`} />
+        ) : (
+          <MdStarBorder key={i} className={`${size} text-gray-300`} />
+        )
       ))}
     </div>
   );
@@ -79,14 +84,27 @@ function ReviewModal({ onClose, onSubmit }) {
 export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const product = allProducts.find(p => p.id === Number(id));
-  const { addToCart, toggleWishlist, isWishlisted } = useCart();
+  
+  // Redux selectors
+  const cartItems = useSelector(state => state.cart.items);
+  const wishlistItems = useSelector(state => state.wishlist.items);
+  
   const [activeImg, setActiveImg] = useState(0);
   const [qty, setQty] = useState(1);
   const [openAccordion, setOpenAccordion] = useState(0);
   const [reviews, setReviews] = useState(initialReviews);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [zoomed, setZoomed] = useState(false);
+  const [showZoomPreview, setShowZoomPreview] = useState(false);
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  // Check if product is in cart
+  const cartItem = cartItems.find(item => item.id === product?.id);
+  const isInCart = !!cartItem;
+  
+  // Check if product is in wishlist
+  const isWishlisted = wishlistItems.some(item => item.id === product?.id);
 
   if (!product) return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-white">
@@ -98,8 +116,44 @@ export default function ProductDetail() {
   const related = allProducts.filter(p => p.category === product.category && p.id !== product.id).slice(0, 4);
   const avgRating = (reviews.reduce((s, r) => s + r.rating, 0) / reviews.length).toFixed(1);
 
-  const handleAddToCart = () => addToCart(product, qty);
-  const handleBuyNow = () => { addToCart(product, qty); navigate("/checkout"); };
+  const handleAddToCart = () => {
+    dispatch(addToCart({ product, qty }));
+  };
+  
+  const handleBuyNow = () => { 
+    dispatch(addToCart({ product, qty })); 
+    navigate("/checkout"); 
+  };
+  
+  const handleIncreaseQty = () => {
+    if (isInCart) {
+      dispatch(updateQuantity({ id: product.id, qty: cartItem.qty + 1 }));
+    }
+  };
+  
+  const handleDecreaseQty = () => {
+    if (isInCart && cartItem.qty > 1) {
+      dispatch(updateQuantity({ id: product.id, qty: cartItem.qty - 1 }));
+    } else if (isInCart && cartItem.qty === 1) {
+      dispatch(updateQuantity({ id: product.id, qty: 0 })); // This will remove from cart
+    }
+  };
+  
+  const handleToggleWishlist = () => {
+    dispatch(toggleWishlist(product));
+  };
+
+  const handleImageMouseMove = (e) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    
+    // Store mouse position as percentage
+    const xPercent = (x / rect.width) * 100;
+    const yPercent = (y / rect.height) * 100;
+    
+    setMousePosition({ x: xPercent, y: yPercent });
+  };
 
   const accordionItems = [
     { title: "Product Description", content: product.description },
@@ -124,166 +178,274 @@ export default function ProductDetail() {
       </div>
 
       {/* Main */}
-      <div className="max-w-7xl mx-auto px-6 md:px-14 py-10 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20">
+      <div className="max-w-[1400px] mx-auto px-6 md:px-14 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-[1fr_1.2fr] gap-8 lg:gap-12 relative">
 
         {/* LEFT — Image Gallery */}
-        <motion.div className="flex flex-col gap-4 lg:sticky lg:top-6 lg:self-start"
+        <motion.div className="lg:sticky lg:top-6 lg:self-start relative"
           initial={{ opacity: 0, x: -40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.55, ease: "easeOut" }}>
-
-          {/* Main image */}
-          <div className="relative w-full aspect-square bg-gradient-to-br from-[#f7f4f0] to-[#ede9e3] rounded-3xl overflow-hidden group cursor-zoom-in shadow-sm"
-            onClick={() => setZoomed(true)}>
-            <AnimatePresence mode="wait">
-              <motion.img key={activeImg} src={product.images[activeImg]} alt={product.title}
-                className="w-full h-full object-contain p-6"
-                initial={{ opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }}
-                transition={{ duration: 0.3 }} />
-            </AnimatePresence>
-            {product.tag && (
-              <div className="absolute top-4 left-4 bg-[#cc0000] text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full shadow">{product.tag}</div>
+          
+          {/* Zoom Preview Panel - Flipkart Style */}
+          <AnimatePresence>
+            {showZoomPreview && (
+              <motion.div 
+                className="hidden lg:block absolute left-[calc(100%+2rem)] top-0 w-[550px] h-[550px] bg-white rounded-xl shadow-2xl border-2 border-gray-300 overflow-hidden pointer-events-none"
+                style={{ zIndex: 100 }}
+                initial={{ opacity: 0, scale: 0.95 }} 
+                animate={{ opacity: 1, scale: 1 }} 
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div className="relative w-full h-full overflow-hidden">
+                  <div
+                    className="w-full h-full"
+                    style={{
+                      backgroundImage: `url(${product.images[activeImg]})`,
+                      backgroundSize: '250%',
+                      backgroundPosition: `${mousePosition.x}% ${mousePosition.y}%`,
+                      backgroundRepeat: 'no-repeat'
+                    }}
+                  />
+                </div>
+                <div className="absolute top-4 right-4 bg-black/70 text-white text-[9px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full flex items-center gap-1.5 shadow-lg">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                  2.5× ZOOM
+                </div>
+              </motion.div>
             )}
-            {product.soldOut && (
-              <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded-3xl">
-                <span className="text-[13px] font-black tracking-widest uppercase text-gray-400 border-2 border-gray-300 px-6 py-2 rounded-full">Sold Out</span>
+          </AnimatePresence>
+          
+          <div className="flex gap-4">
+            {/* Thumbnails - Vertical */}
+            {product.images.length > 1 && (
+              <div className="flex flex-col gap-3 w-[70px]">
+                {product.images.map((img, i) => (
+                  <motion.button key={i} onClick={() => setActiveImg(i)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                    className={`w-[70px] h-[70px] rounded-lg overflow-hidden border-2 transition-all duration-200 bg-white flex-shrink-0 ${activeImg === i ? "border-[#cc0000] shadow-md ring-2 ring-[#cc0000]/20" : "border-gray-200 hover:border-gray-300"}`}>
+                    <img src={img} alt="" className="w-full h-full object-contain p-1.5" />
+                  </motion.button>
+                ))}
               </div>
             )}
-            {/* Arrows */}
-            {product.images.length > 1 && (<>
-              <button onClick={e => { e.stopPropagation(); setActiveImg(i => (i - 1 + product.images.length) % product.images.length); }}
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/90 rounded-full shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white">
-                <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
-              </button>
-              <button onClick={e => { e.stopPropagation(); setActiveImg(i => (i + 1) % product.images.length); }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 bg-white/90 rounded-full shadow flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all hover:bg-white">
-                <svg className="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              </button>
-            </>)}
-            {/* Zoom hint */}
-            <div className="absolute bottom-3 right-3 bg-black/40 text-white text-[9px] font-bold tracking-widest uppercase px-2 py-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity">
-              Click to zoom
-            </div>
-          </div>
 
-          {/* Thumbnails */}
-          {product.images.length > 1 && (
-            <div className="flex gap-3 overflow-x-auto pb-1">
-              {product.images.map((img, i) => (
-                <motion.button key={i} onClick={() => setActiveImg(i)} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.97 }}
-                  className={`shrink-0 w-[72px] h-[72px] rounded-2xl overflow-hidden border-2 transition-all duration-200 bg-[#f7f4f0] ${activeImg === i ? "border-[#1a1a1a] shadow-md" : "border-transparent hover:border-gray-300"}`}>
-                  <img src={img} alt="" className="w-full h-full object-contain p-1" />
-                </motion.button>
-              ))}
-            </div>
-          )}
+            {/* Main image container with zoom */}
+            <div className="flex-1">
+              <div 
+                className="relative w-full aspect-square bg-white rounded-xl overflow-hidden border border-gray-200 shadow-sm cursor-crosshair"
+                onMouseMove={handleImageMouseMove}
+                onMouseEnter={() => setShowZoomPreview(true)}
+                onMouseLeave={() => setShowZoomPreview(false)}
+              >
+                <AnimatePresence mode="wait">
+                  <motion.img 
+                    key={activeImg} 
+                    src={product.images[activeImg]} 
+                    alt={product.title}
+                    className="w-full h-full object-contain select-none pointer-events-none"
+                    style={{ padding: '24px' }}
+                    initial={{ opacity: 0 }} 
+                    animate={{ opacity: 1 }} 
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    draggable={false}
+                  />
+                </AnimatePresence>
+                
+                {product.tag && (
+                  <div className="absolute top-3 left-3 bg-[#cc0000] text-white text-[10px] font-bold tracking-widest uppercase px-3 py-1.5 rounded-full shadow-lg z-10">{product.tag}</div>
+                )}
+                
+                {product.soldOut && (
+                  <div className="absolute inset-0 bg-white/80 flex items-center justify-center rounded-xl z-10">
+                    <span className="text-[13px] font-black tracking-widest uppercase text-gray-400 border-2 border-gray-300 px-6 py-2 rounded-full bg-white">Sold Out</span>
+                  </div>
+                )}
 
-          {/* Trust badges */}
-          <div className="grid grid-cols-4 gap-2 mt-1">
-            {[
-              { icon: <MdLocalShipping className="text-[#cf2127] text-2xl" />, label: "Free Shipping" },
-              { icon: <MdLock className="text-[#cf2127] text-2xl" />, label: "Secure Pay" },
-              { icon: <MdVerifiedUser className="text-[#cf2127] text-2xl" />, label: "1 Yr Warranty" },
-              { icon: <MdReplay className="text-[#cf2127] text-2xl" />, label: "Easy Returns" },
-            ].map(b => (
-              <div key={b.label} className="flex flex-col items-center gap-1.5 bg-[#fafafa] rounded-2xl py-3 px-2 text-center border border-gray-100">
-                {b.icon}
-                <span className="text-[9px] text-gray-500 font-semibold leading-tight">{b.label}</span>
+                {/* Zoom Lens Overlay */}
+                {showZoomPreview && (
+                  <div 
+                    className="absolute w-[100px] h-[100px] border-2 border-[#cc0000] pointer-events-none z-20 bg-white/10"
+                    style={{
+                      left: `${mousePosition.x}%`,
+                      top: `${mousePosition.y}%`,
+                      transform: 'translate(-50%, -50%)',
+                      boxShadow: '0 0 0 9999px rgba(0,0,0,0.3)'
+                    }}
+                  />
+                )}
+
+                {/* Zoom indicator badge */}
+                {showZoomPreview && (
+                  <div className="absolute top-3 right-3 bg-black/70 text-white text-[9px] font-bold tracking-widest uppercase px-2.5 py-1.5 rounded-full flex items-center gap-1.5 z-10">
+                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                    HOVER TO ZOOM
+                  </div>
+                )}
               </div>
-            ))}
+
+              {/* Trust badges below image */}
+              <div className="grid grid-cols-4 gap-2 mt-4">
+                {[
+                  { icon: <MdLocalShipping className="text-[#cc0000] text-lg" />, label: "Free Ship" },
+                  { icon: <MdLock className="text-[#cc0000] text-lg" />, label: "Secure" },
+                  { icon: <MdVerifiedUser className="text-[#cc0000] text-lg" />, label: "Warranty" },
+                  { icon: <MdReplay className="text-[#cc0000] text-lg" />, label: "Returns" },
+                ].map(b => (
+                  <div key={b.label} className="flex flex-col items-center gap-1 bg-[#fafafa] rounded-lg py-2.5 px-2 text-center border border-gray-100">
+                    {b.icon}
+                    <span className="text-[8px] text-gray-600 font-semibold leading-tight">{b.label}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </motion.div>
 
         {/* RIGHT — Product Info */}
-        <motion.div className="flex flex-col gap-5"
+        <motion.div className="flex flex-col gap-6"
           initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.55, ease: "easeOut", delay: 0.1 }}>
 
-          <span className="text-[9px] font-bold tracking-[0.25em] uppercase text-[#cc0000] border border-[#cc0000]/30 bg-[#cc0000]/5 px-3 py-1.5 rounded-full w-fit">
-            Oreva Group — Trusted Since 1983
-          </span>
+          <div className="inline-flex items-center gap-3 text-[11px] font-black tracking-[0.15em] uppercase">
+            <span className="text-[#cc0000] bg-[#cc0000]/10 px-4 py-2 rounded-full border border-[#cc0000]/30 flex items-center gap-2">
+              <FaAward className="text-[14px]" />
+              Oreva Group
+            </span>
+            <span className="text-gray-400">•</span>
+            <span className="text-gray-600 font-bold">Since 1983</span>
+          </div>
 
           <div>
-            <h1 className="text-[20px] md:text-[22px] font-black text-[#1a1a1a] leading-snug tracking-tight">{product.title}</h1>
-            <p className="text-[11px] text-gray-400 mt-1.5 tracking-widest uppercase font-medium">SKU: {product.sku}</p>
+            <h1 className="text-[28px] md:text-[36px] font-black text-[#1a1a1a] leading-[1.2] tracking-tight mb-3">{product.title}</h1>
+            <p className="text-[13px] text-gray-500 tracking-wider font-semibold uppercase">SKU: <span className="text-gray-700 font-bold">{product.sku}</span></p>
           </div>
 
           {/* Rating row */}
-          <div className="flex items-center gap-3">
-            <Stars rating={Math.round(Number(avgRating))} />
-            <span className="text-[13px] font-black text-[#1a1a1a]">{avgRating}</span>
-            <span className="text-[11px] text-gray-400">· {reviews.length} reviews</span>
-            <button onClick={() => setShowReviewModal(true)} className="ml-auto text-[11px] text-[#cc0000] font-bold hover:underline">Write a review</button>
+          <div className="flex items-center gap-4 pb-4 border-b border-gray-100">
+            <div className="flex items-center gap-2">
+              <Stars rating={Math.round(Number(avgRating))} size="w-5 h-5" />
+              <span className="text-[16px] font-black text-[#1a1a1a]">{avgRating}</span>
+            </div>
+            <span className="text-[13px] text-gray-400 font-medium">({reviews.length} reviews)</span>
+            <button onClick={() => setShowReviewModal(true)} className="ml-auto text-[12px] text-[#cc0000] font-bold hover:underline tracking-wide">
+              Write Review
+            </button>
           </div>
 
           {/* Price */}
-          <div className="flex items-baseline gap-3 flex-wrap">
-            <span className="text-[30px] font-black text-[#1a1a1a] tracking-tight">{product.price}</span>
-            {product.old_price && <span className="text-[16px] text-gray-400 line-through">{product.old_price}</span>}
-            {product.tag && <span className="bg-green-50 text-green-700 text-[11px] font-bold px-2.5 py-1 rounded-full border border-green-200">{product.tag}</span>}
+          <div className="flex items-center gap-4 flex-wrap">
+            <span className="text-[44px] md:text-[52px] font-black text-[#1a1a1a] tracking-tight leading-none">{product.price}</span>
+            {product.old_price && (
+              <>
+                <span className="text-[26px] text-gray-400 line-through font-bold">{product.old_price}</span>
+                {product.tag && (
+                  <span className="bg-green-50 text-green-700 text-[15px] font-black px-4 py-2.5 rounded-full border-2 border-green-200 tracking-wide flex items-center gap-2">
+                    <MdFlashOn className="text-[20px]" />
+                    {product.tag}
+                  </span>
+                )}
+              </>
+            )}
           </div>
 
           {/* Social proof */}
-          <div className="flex flex-col gap-2">
-            <div className="flex items-center gap-2 text-[11px] text-[#cc0000] font-semibold">
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>
-              144+ people ordered this in the last 7 days
+          <div className="flex flex-col gap-3.5 bg-gray-50 rounded-xl p-5 border border-gray-200">
+            <div className="flex items-center gap-3 text-[14px] text-[#cc0000] font-bold">
+              <MdTrendingUp className="text-[22px] flex-shrink-0" />
+              <span className="leading-snug">144+ people ordered this in the last 7 days</span>
             </div>
-            <div className="flex items-center gap-2 text-[11px] text-gray-500">
-              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-              <span><strong className="text-gray-700">13</strong> customers viewing right now</span>
+            <div className="flex items-center gap-3 text-[14px] text-gray-700 font-semibold">
+              <span className="w-3 h-3 rounded-full bg-green-500 animate-pulse flex-shrink-0" />
+              <span className="leading-snug"><strong className="text-gray-900 font-black">13</strong> customers viewing right now</span>
             </div>
           </div>
 
           <div className="h-px bg-gray-100" />
 
           {/* Category / colour */}
-          <div className="flex items-center gap-4 text-[11px] text-gray-500">
-            <span>Category: <strong className="text-[#1a1a1a]">{product.category}</strong></span>
-            {product.colour && <span>Colour: <strong className="text-[#1a1a1a]">{product.colour}</strong></span>}
+          <div className="flex items-center gap-6 text-[15px] text-gray-600 font-medium">
+            <span className="flex items-center gap-2">
+              <span className="text-gray-500 font-normal">Category:</span>
+              <strong className="text-[#1a1a1a] font-bold">{product.category}</strong>
+            </span>
+            {product.colour && (
+              <span className="flex items-center gap-2">
+                <span className="text-gray-500 font-normal">Colour:</span>
+                <strong className="text-[#1a1a1a] font-bold">{product.colour}</strong>
+              </span>
+            )}
           </div>
 
           {/* Delivery */}
-          <div className="flex items-center gap-3 bg-[#fafafa] border border-gray-100 rounded-2xl px-4 py-3">
-            <svg className="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" /></svg>
+          <div className="flex items-start gap-4 bg-blue-50 border border-blue-200 rounded-xl px-5 py-4">
+            <FaTruck className="text-[28px] text-blue-600 shrink-0 mt-0.5" />
             <div>
-              <p className="text-[11px] font-semibold text-gray-700">Estimated Delivery</p>
-              <p className="text-[11px] text-gray-400">3–5 business days · Free shipping</p>
+              <p className="text-[16px] font-black text-gray-900 mb-1">Estimated Delivery</p>
+              <p className="text-[14px] text-gray-700 font-medium leading-relaxed">3–5 business days · Free shipping on orders above ₹999</p>
             </div>
           </div>
 
-          {/* Qty + CTA */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center border-2 border-gray-200 rounded-xl overflow-hidden">
-              <button onClick={() => setQty(q => Math.max(1, q - 1))} className="w-10 h-12 flex items-center justify-center hover:bg-gray-50 text-lg font-bold text-gray-600 transition-colors">−</button>
-              <span className="w-10 text-center text-[13px] font-bold text-[#1a1a1a]">{qty}</span>
-              <button onClick={() => setQty(q => q + 1)} className="w-10 h-12 flex items-center justify-center hover:bg-gray-50 text-lg font-bold text-gray-600 transition-colors">+</button>
-            </div>
-            <motion.button onClick={handleAddToCart} whileTap={{ scale: 0.97 }}
-              className="flex-1 h-12 text-[12px] font-bold tracking-[0.15em] uppercase rounded-xl bg-[#1a1a1a] text-white hover:bg-[#cc0000] hover:shadow-lg hover:shadow-red-100 transition-all duration-300">
-              Add to Cart
-            </motion.button>
+          {/* Action Buttons - All in One Row */}
+          <div className="grid grid-cols-3 gap-2.5 pt-2">
+            {/* Add to Cart Button - Shows quantity controls when in cart */}
+            {isInCart ? (
+              <motion.div 
+                className="h-[50px] rounded-xl bg-[#1a1a1a] text-white flex items-center justify-between px-2 shadow-sm"
+                initial={{ scale: 0.95 }}
+                animate={{ scale: 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                <button onClick={handleDecreaseQty} className="w-9 h-9 flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors">
+                  <MdRemove className="text-[18px]" />
+                </button>
+                <span className="text-[16px] font-black">{cartItem.qty}</span>
+                <button onClick={handleIncreaseQty} className="w-9 h-9 flex items-center justify-center hover:bg-white/20 rounded-lg transition-colors">
+                  <MdAdd className="text-[18px]" />
+                </button>
+              </motion.div>
+            ) : (
+              <motion.button onClick={handleAddToCart} whileTap={{ scale: 0.97 }}
+                className="h-[50px] text-[12px] font-bold tracking-wide uppercase rounded-xl bg-[#1a1a1a] text-white hover:bg-[#333] transition-all duration-300 flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md">
+                <MdShoppingCart className="text-[18px]" />
+                <span className="hidden sm:inline">Add to Cart</span>
+                <span className="sm:hidden">Cart</span>
+              </motion.button>
+            )}
+
+            {/* Buy Now Button */}
             <motion.button onClick={handleBuyNow} whileTap={{ scale: 0.97 }}
-              className="flex-1 h-12 text-[12px] font-bold tracking-[0.15em] uppercase rounded-xl bg-[#cf2127] text-white hover:bg-[#a01a1f] transition-all duration-300 shadow-md shadow-red-100">
-              Buy Now
+              className="h-[50px] text-[12px] font-bold tracking-wide uppercase rounded-xl bg-[#cc0000] text-white hover:bg-[#b30000] transition-all duration-300 flex items-center justify-center gap-1.5 shadow-sm hover:shadow-md">
+              <MdFlashOn className="text-[18px]" />
+              <span className="hidden sm:inline">Buy Now</span>
+              <span className="sm:hidden">Buy</span>
+            </motion.button>
+
+            {/* Wishlist Button */}
+            <motion.button onClick={handleToggleWishlist} whileTap={{ scale: 0.97 }}
+              className="h-[50px] text-[12px] font-bold tracking-wide uppercase rounded-xl border border-gray-300 text-gray-700 hover:text-[#cc0000] hover:border-[#cc0000] hover:bg-red-50 transition-all duration-300 flex items-center justify-center gap-1.5">
+              {isWishlisted ? (
+                <MdFavorite className="text-[20px] text-[#cc0000]" />
+              ) : (
+                <MdFavoriteBorder className="text-[20px]" />
+              )}
+              <span className="hidden sm:inline">{isWishlisted ? "Wishlisted" : "Wishlist"}</span>
             </motion.button>
           </div>
 
-          {/* Wishlist */}
-          <button onClick={() => toggleWishlist(product)} className="flex items-center gap-2 text-[12px] text-gray-400 hover:text-[#cc0000] transition-colors w-fit">
-            <svg className="w-4 h-4" fill={isWishlisted(product.id) ? "#cc0000" : "none"} stroke={isWishlisted(product.id) ? "#cc0000" : "currentColor"} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z" />
-            </svg>
-            {isWishlisted(product.id) ? "Wishlisted" : "Add to Wishlist"}
-          </button>
-
-          <div className="h-px bg-gray-100" />
+          <div className="h-px bg-gray-200 my-2" />
 
           {/* Accordion */}
-          <div className="border border-gray-100 rounded-2xl overflow-hidden divide-y divide-gray-100">
+          <div className="border border-gray-200 rounded-2xl overflow-hidden divide-y divide-gray-200">
             {accordionItems.map((item, i) => (
               <div key={i}>
                 <button onClick={() => setOpenAccordion(openAccordion === i ? null : i)}
-                  className="w-full flex items-center justify-between px-5 py-4 text-[11px] font-bold tracking-[0.15em] uppercase text-gray-700 hover:text-[#cc0000] transition-colors bg-white hover:bg-[#fafafa]">
+                  className="w-full flex items-center justify-between px-6 py-4 text-[12px] font-bold tracking-[0.12em] uppercase text-gray-700 hover:text-[#cc0000] transition-colors bg-white hover:bg-gray-50">
                   {item.title}
-                  <motion.svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                  <motion.svg className="w-5 h-5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                     animate={{ rotate: openAccordion === i ? 45 : 0 }} transition={{ duration: 0.25 }}>
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </motion.svg>
@@ -292,28 +454,28 @@ export default function ProductDetail() {
                   {openAccordion === i && (
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
                       transition={{ duration: 0.3, ease: "easeInOut" }} className="overflow-hidden">
-                      <div className="px-5 pb-5 pt-1 bg-[#fafafa]">
+                      <div className="px-6 pb-5 pt-2 bg-gray-50">
                         {item.features ? (
-                          <ul className="flex flex-col gap-2">
+                          <ul className="flex flex-col gap-3">
                             {item.features.map((f, fi) => (
-                              <li key={fi} className="flex items-start gap-2 text-[12px] text-gray-500">
-                                <span className="w-1.5 h-1.5 rounded-full bg-[#cc0000] mt-1.5 shrink-0" />
-                                {f}
+                              <li key={fi} className="flex items-start gap-3 text-[13px] text-gray-700 leading-relaxed">
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#cc0000] mt-2 shrink-0" />
+                                <span className="font-medium">{f}</span>
                               </li>
                             ))}
                           </ul>
                         ) : item.specs ? (
-                          <div className="grid grid-cols-1 gap-2">
+                          <div className="grid grid-cols-1 gap-3">
                             {Object.entries(item.specs).map(([k, v]) => (
-                              <div key={k} className="flex gap-3 text-[12px]">
-                                <span className="text-gray-400 capitalize w-40 shrink-0">{k.replace(/([A-Z])/g, ' $1')}</span>
-                                <span className="text-gray-700 font-medium">{v}</span>
+                              <div key={k} className="flex gap-4 text-[13px]">
+                                <span className="text-gray-500 capitalize w-44 shrink-0 font-medium">{k.replace(/([A-Z])/g, ' $1')}</span>
+                                <span className="text-gray-800 font-semibold">{v}</span>
                               </div>
                             ))}
-                            {product.colour && <div className="flex gap-3 text-[12px]"><span className="text-gray-400 w-40 shrink-0">Colour</span><span className="text-gray-700 font-medium">{product.colour}</span></div>}
+                            {product.colour && <div className="flex gap-4 text-[13px]"><span className="text-gray-500 w-44 shrink-0 font-medium">Colour</span><span className="text-gray-800 font-semibold">{product.colour}</span></div>}
                           </div>
                         ) : (
-                          <p className="text-[12px] text-gray-500 leading-relaxed">{item.content}</p>
+                          <p className="text-[13px] text-gray-700 leading-relaxed font-medium">{item.content}</p>
                         )}
                       </div>
                     </motion.div>
@@ -324,48 +486,50 @@ export default function ProductDetail() {
           </div>
 
           {/* Payment badges */}
-          <div className="border border-gray-100 rounded-2xl p-4 text-center bg-[#fafafa]">
-            <p className="text-[10px] font-bold text-gray-400 tracking-[0.2em] uppercase mb-3">Guaranteed Safe Checkout</p>
-            <div className="flex items-center justify-center gap-2 flex-wrap">
+          <div className="border border-gray-200 rounded-2xl p-5 text-center bg-gray-50">
+            <p className="text-[11px] font-bold text-gray-500 tracking-[0.2em] uppercase mb-4">Guaranteed Safe Checkout</p>
+            <div className="flex items-center justify-center gap-2.5 flex-wrap">
               {["VISA", "Mastercard", "G Pay", "RuPay", "Paytm", "PhonePe", "UPI"].map(p => (
-                <span key={p} className="bg-white border border-gray-200 px-2.5 py-1 rounded-lg text-[10px] font-bold text-gray-500 shadow-sm">{p}</span>
+                <span key={p} className="bg-white border border-gray-300 px-3 py-1.5 rounded-lg text-[11px] font-bold text-gray-600">{p}</span>
               ))}
             </div>
           </div>
         </motion.div>
+
+        </div>
       </div>
 
       {/* Reviews */}
-      <motion.div className="w-full bg-[#fafafa] border-t border-gray-100 mt-4"
+      <motion.div className="w-full bg-gray-50 border-t border-gray-200 mt-4"
         initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
         <div className="max-w-7xl mx-auto px-6 md:px-14 py-12">
           <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
             <div>
-              <h2 className="text-[20px] font-black text-[#1a1a1a] tracking-tight">Customer Reviews</h2>
-              <div className="flex items-center gap-2 mt-2">
+              <h2 className="text-[22px] font-black text-[#1a1a1a] tracking-tight mb-2">Customer Reviews</h2>
+              <div className="flex items-center gap-3 mt-2">
                 <Stars rating={Math.round(Number(avgRating))} />
-                <span className="text-[13px] font-black text-[#1a1a1a]">{avgRating}</span>
-                <span className="text-[11px] text-gray-400">· {reviews.length} reviews</span>
+                <span className="text-[14px] font-black text-[#1a1a1a]">{avgRating}</span>
+                <span className="text-[12px] text-gray-500 font-medium">· {reviews.length} reviews</span>
               </div>
             </div>
             <button onClick={() => setShowReviewModal(true)}
-              className="bg-[#1a1a1a] text-white px-5 py-2.5 text-[11px] font-bold tracking-[0.15em] uppercase rounded-xl hover:bg-[#cc0000] transition-colors">
+              className="bg-[#1a1a1a] text-white px-6 py-3 text-[12px] font-bold tracking-[0.12em] uppercase rounded-xl hover:bg-[#cc0000] transition-colors">
               Write a Review
             </button>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {reviews.map((r, i) => (
-              <motion.div key={i} className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-shadow"
+              <motion.div key={i} className="bg-white rounded-2xl p-6 border border-gray-200 hover:shadow-lg transition-all"
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: i * 0.08 }}>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-full bg-[#1a1a1a] text-white flex items-center justify-center text-[13px] font-black shrink-0">{r.name[0]}</div>
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="w-11 h-11 rounded-full bg-[#1a1a1a] text-white flex items-center justify-center text-[14px] font-black shrink-0">{r.name[0]}</div>
                   <div>
-                    <p className="text-[12px] font-bold text-[#1a1a1a]">{r.name}</p>
-                    <p className="text-[10px] text-gray-400">{r.date}</p>
+                    <p className="text-[13px] font-bold text-[#1a1a1a]">{r.name}</p>
+                    <p className="text-[11px] text-gray-500 font-medium">{r.date}</p>
                   </div>
                 </div>
-                <Stars rating={r.rating} size="w-3.5 h-3.5" />
-                <p className="text-[12px] text-gray-500 mt-2.5 leading-relaxed">{r.text}</p>
+                <Stars rating={r.rating} size="w-4 h-4" />
+                <p className="text-[13px] text-gray-700 mt-3 leading-relaxed font-medium">{r.text}</p>
               </motion.div>
             ))}
           </div>
@@ -376,41 +540,25 @@ export default function ProductDetail() {
       {related.length > 0 && (
         <motion.div className="max-w-7xl mx-auto px-6 md:px-14 py-12"
           initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.6 }}>
-          <h2 className="text-[18px] font-black text-[#1a1a1a] tracking-tight mb-6">You May Also Like</h2>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <h2 className="text-[20px] font-black text-[#1a1a1a] tracking-tight mb-6">You May Also Like</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
             {related.map((p, i) => (
               <motion.div key={p.id} onClick={() => navigate(`/product/${p.id}`)}
-                className="group cursor-pointer bg-[#fafafa] rounded-2xl overflow-hidden border border-gray-100 hover:shadow-lg transition-all duration-300"
+                className="group cursor-pointer bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-xl transition-all duration-300 hover:border-[#cc0000]"
                 initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4, delay: i * 0.08 }}
-                whileHover={{ y: -4 }}>
-                <div className="aspect-square bg-white flex items-center justify-center p-4 overflow-hidden">
+                whileHover={{ y: -6 }}>
+                <div className="aspect-square bg-gray-50 flex items-center justify-center p-4 overflow-hidden">
                   <img src={p.img} alt={p.title} className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-110" />
                 </div>
-                <div className="p-3">
-                  <p className="text-[11px] font-bold text-[#1a1a1a] line-clamp-2 leading-snug">{p.title}</p>
-                  <p className="text-[12px] font-black text-[#cc0000] mt-1">{p.price || "—"}</p>
+                <div className="p-4 bg-white">
+                  <p className="text-[12px] font-bold text-[#1a1a1a] line-clamp-2 leading-snug mb-2">{p.title}</p>
+                  <p className="text-[14px] font-black text-[#cc0000]">{p.price || "—"}</p>
                 </div>
               </motion.div>
             ))}
           </div>
         </motion.div>
       )}
-
-      {/* Zoom Modal */}
-      <AnimatePresence>
-        {zoomed && (
-          <motion.div className="fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-zoom-out"
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => setZoomed(false)}>
-            <motion.img src={product.images[activeImg]} alt={product.title}
-              className="max-w-full max-h-full object-contain rounded-xl"
-              initial={{ scale: 0.85 }} animate={{ scale: 1 }} exit={{ scale: 0.85 }} transition={{ duration: 0.3 }} />
-            <button className="absolute top-4 right-4 w-10 h-10 bg-white/10 rounded-full flex items-center justify-center text-white hover:bg-white/20 transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Review Modal */}
       <AnimatePresence>
