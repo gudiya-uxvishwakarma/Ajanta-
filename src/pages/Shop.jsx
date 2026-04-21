@@ -1,7 +1,119 @@
 import { useState, useEffect } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, Link, useNavigate } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { addToCart, removeFromCart } from "../store/cartSlice";
+import { toggleWishlist } from "../store/wishlistSlice";
 import { allProducts } from "../data/products";
 import { LifestyleCard } from "../components/LifestyleCards";
+
+function ListCard({ card }) {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const wishlistItems = useSelector(state => state.wishlist.items);
+  const cartItems = useSelector(state => state.cart.items);
+  const isWishlisted = wishlistItems.some(item => item.id === card.id);
+  const isInCart = cartItems.some(item => item.id === card.id);
+
+  return (
+    <div className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-300 flex">
+      {/* Image */}
+      <div
+        className="relative w-28 sm:w-40 md:w-52 flex-shrink-0 bg-gray-50 overflow-hidden cursor-pointer"
+        onClick={() => navigate(`/product/${card.id}`)}
+      >
+        <img
+          src={card.img}
+          alt={card.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+        {card.discount && (
+          <div className="absolute top-3 left-3 bg-[#cc0000] text-white text-xs font-bold px-2 py-1 rounded">
+            -{card.discount}%
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="flex flex-col flex-1 p-5 justify-between">
+        <div>
+          {/* Category + Rating */}
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs text-gray-500 uppercase tracking-wide font-medium">{card.category}</span>
+            <div className="flex items-center gap-1">
+              {[...Array(5)].map((_, i) => (
+                <svg key={i} className={`w-4 h-4 ${i < (card.rating || 4) ? 'text-amber-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+              ))}
+              <span className="text-xs text-gray-500 ml-1">(24)</span>
+            </div>
+          </div>
+
+          {/* Title */}
+          <h3
+            className="text-base font-semibold text-gray-900 mb-2 line-clamp-2 cursor-pointer hover:text-[#cc0000] transition-colors"
+            onClick={() => navigate(`/product/${card.id}`)}
+          >
+            {card.title}
+          </h3>
+
+          {/* Description */}
+          {card.description && (
+            <p className="hidden sm:block text-sm text-gray-500 line-clamp-2 mb-3">{card.description}</p>
+          )}
+        </div>
+
+        {/* Price + Actions */}
+        <div className="flex flex-wrap items-center justify-between mt-3 pt-3 border-t border-gray-100 gap-2">
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl sm:text-2xl font-bold text-[#cc0000]">{card.price || "₹999"}</span>
+            {card.old_price && (
+              <span className="text-sm text-gray-400 line-through">{card.old_price}</span>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* Wishlist */}
+            <button
+              onClick={() => dispatch(toggleWishlist(card))}
+              className={`w-9 h-9 rounded-full border flex items-center justify-center transition-all ${
+                isWishlisted ? 'bg-[#cc0000] border-[#cc0000] text-white' : 'border-gray-300 text-gray-500 hover:border-[#cc0000] hover:text-[#cc0000]'
+              }`}
+            >
+              <svg className="w-4 h-4" fill={isWishlisted ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              </svg>
+            </button>
+
+            {/* Add to Cart */}
+            <button
+              onClick={() => isInCart ? dispatch(removeFromCart(card.id)) : dispatch(addToCart({ product: card, qty: 1 }))}
+              className={`flex items-center gap-1.5 px-3 sm:px-5 py-2 sm:py-2.5 rounded-lg font-semibold text-xs sm:text-sm transition-all ${
+                isInCart ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-[#cc0000] text-white hover:bg-[#a00000]'
+              }`}
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+              </svg>
+              <span className="hidden xs:inline">{isInCart ? 'In Cart' : 'Add to Cart'}</span>
+            </button>
+
+            {/* View */}
+            <button
+              onClick={() => navigate(`/product/${card.id}`)}
+              className="w-9 h-9 rounded-lg border border-gray-300 flex items-center justify-center text-gray-500 hover:border-[#cc0000] hover:text-[#cc0000] transition-all"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 const categories = [
   { name: "All Categories", value: "All", count: 0 },
@@ -42,6 +154,7 @@ export default function Shop() {
   const [activeFilters, setActiveFilters] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
   // Calculate category counts
   useEffect(() => {
@@ -285,159 +398,360 @@ export default function Shop() {
         </div>
       </div>
 
-      <div className="w-full px-6 md:px-14 py-6">
-        <div className="flex gap-6">
-          {/* Left Sidebar */}
-          <aside className={`${sidebarOpen ? 'w-80' : 'w-0'} transition-all duration-300 overflow-hidden flex-shrink-0`}>
-            <div className="bg-white rounded-lg p-5 sticky top-6 max-h-[calc(100vh-100px)] overflow-y-auto border border-gray-200">
-              {/* Categories Section */}
-              <div className="mb-5 pb-5 border-b border-gray-200">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="text-base font-bold text-gray-900">Categories</h3>
-                  <button
-                    onClick={() => setSidebarOpen(false)}
-                    className="md:hidden text-gray-500 hover:text-[#cc0000] transition-colors"
-                  >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
-                </div>
+      <div className="w-full px-4 sm:px-6 md:px-14 py-6">
+        {/* Mobile Filter Button */}
+        <div className="flex items-center justify-between mb-4 md:hidden">
+          <button
+            onClick={() => setMobileSidebarOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 bg-[#cc0000] text-white rounded-lg font-semibold text-sm"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            Filters
+            {activeFilters.length > 0 && (
+              <span className="bg-white text-[#cc0000] text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                {activeFilters.length}
+              </span>
+            )}
+          </button>
+          <p className="text-sm text-gray-600">
+            <span className="font-bold text-gray-900">{filtered.length}</span> results
+          </p>
+        </div>
 
-                {/* Category Search */}
-                <div className="relative mb-3">
-                  <input
-                    type="text"
-                    placeholder="Search categories..."
-                    value={categorySearch}
-                    onChange={(e) => setCategorySearch(e.target.value)}
-                    className="w-full pl-9 pr-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#cc0000] transition-colors"
-                  />
-                  <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        {/* Mobile Sidebar Overlay */}
+        {mobileSidebarOpen && (
+          <div className="fixed inset-0 z-50 md:hidden">
+            {/* Backdrop */}
+            <div
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setMobileSidebarOpen(false)}
+            />
+            {/* Drawer */}
+            <div className="absolute left-0 top-0 h-full w-80 max-w-[85vw] bg-white overflow-y-auto shadow-2xl">
+              <div className="flex items-center justify-between p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[#cc0000]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
                   </svg>
+                  <h2 className="text-base font-bold text-gray-900">Filters</h2>
                 </div>
-
-                {/* Category List */}
-                <div className="space-y-1">
-                  {visibleCategories.map((cat) => (
-                    <label
-                      key={cat.value}
-                      className="flex items-center justify-between p-2 rounded cursor-pointer transition-colors hover:bg-gray-50 group"
-                    >
-                      <div className="flex items-center gap-2.5">
-                        <input
-                          type="checkbox"
-                          checked={activeCategory === cat.value}
-                          onChange={() => setActiveCategory(cat.value)}
-                          className="w-4 h-4 text-[#cc0000] border-gray-300 rounded focus:ring-[#cc0000] cursor-pointer accent-[#cc0000]"
-                        />
-                        <span className={`text-sm ${activeCategory === cat.value ? 'font-semibold text-[#cc0000]' : 'text-gray-700'}`}>
-                          {cat.name}
-                        </span>
+                <button
+                  onClick={() => setMobileSidebarOpen(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                >
+                  <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              <div className="p-4 space-y-4">
+                {activeFilters.length > 0 && (
+                  <button onClick={() => { clearAllFilters(); setMobileSidebarOpen(false); }} className="w-full text-sm text-[#cc0000] font-semibold hover:underline text-left">
+                    Clear all filters
+                  </button>
+                )}
+                {/* Categories */}
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Categories</h3>
+                  </div>
+                  <div className="p-3">
+                    <div className="relative mb-3">
+                      <input
+                        type="text"
+                        placeholder="Search..."
+                        value={categorySearch}
+                        onChange={(e) => setCategorySearch(e.target.value)}
+                        className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#cc0000]"
+                      />
+                      <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                      </svg>
+                    </div>
+                    <div className="space-y-0.5">
+                      {visibleCategories.map((cat) => (
+                        <button
+                          key={cat.value}
+                          onClick={() => { setActiveCategory(cat.value); setMobileSidebarOpen(false); }}
+                          className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all ${
+                            activeCategory === cat.value ? 'bg-[#cc0000] text-white' : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5">
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${activeCategory === cat.value ? 'bg-white' : 'bg-gray-300'}`} />
+                            <span className="font-medium text-left">{cat.name}</span>
+                          </div>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${activeCategory === cat.value ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'}`}>
+                            {cat.count}
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                    {filteredCategories.length > 5 && (
+                      <button
+                        onClick={() => setShowMoreCategories(!showMoreCategories)}
+                        className="w-full mt-2 py-2 text-sm font-semibold text-[#cc0000] hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-1"
+                      >
+                        {showMoreCategories ? <>Show Less <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg></> : <>Show More <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg></>}
+                      </button>
+                    )}
+                  </div>
+                </div>
+                {/* Price Range */}
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Price Range</h3>
+                    {(priceRange[0] > 0 || priceRange[1] < 10000) && (
+                      <button onClick={() => setPriceRange([0, 10000])} className="text-xs text-[#cc0000] font-semibold hover:underline">Reset</button>
+                    )}
+                  </div>
+                  <div className="p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-bold text-[#cc0000] bg-red-50 px-3 py-1.5 rounded-lg">₹{priceRange[0].toLocaleString()}</span>
+                      <div className="flex-1 h-px bg-gray-200 mx-3" />
+                      <span className="text-sm font-bold text-[#cc0000] bg-red-50 px-3 py-1.5 rounded-lg">₹{priceRange[1].toLocaleString()}</span>
+                    </div>
+                    <div className="space-y-2 px-1">
+                      <input type="range" min="0" max="10000" step="100" value={priceRange[0]} onChange={(e) => setPriceRange([Math.min(parseInt(e.target.value), priceRange[1] - 100), priceRange[1]])} className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-[#cc0000] bg-gray-200" />
+                      <input type="range" min="0" max="10000" step="100" value={priceRange[1]} onChange={(e) => setPriceRange([priceRange[0], Math.max(parseInt(e.target.value), priceRange[0] + 100)])} className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-[#cc0000] bg-gray-200" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-500 mb-1 block">Min</label>
+                        <input type="number" value={priceRange[0]} onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#cc0000] bg-gray-50" placeholder="0" />
                       </div>
-                      <span className="text-xs text-gray-500">
-                        ({cat.count})
-                      </span>
-                    </label>
-                  ))}
+                      <span className="text-gray-400 mt-5">—</span>
+                      <div className="flex-1">
+                        <label className="text-xs text-gray-500 mb-1 block">Max</label>
+                        <input type="number" value={priceRange[1]} onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#cc0000] bg-gray-50" placeholder="10000" />
+                      </div>
+                    </div>
+                  </div>
                 </div>
+                {/* Rating Filter */}
+                <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+                    <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Customer Rating</h3>
+                    {selectedRatings.length > 0 && (
+                      <button onClick={() => setSelectedRatings([])} className="text-xs text-[#cc0000] font-semibold hover:underline">Reset</button>
+                    )}
+                  </div>
+                  <div className="p-3 space-y-1">
+                    {[5, 4, 3, 2, 1].map((rating) => (
+                      <button key={rating} onClick={() => toggleRating(rating)} className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all ${selectedRatings.includes(rating) ? 'bg-amber-50 border border-amber-200' : 'hover:bg-gray-50'}`}>
+                        <div className="flex items-center gap-2">
+                          <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${selectedRatings.includes(rating) ? 'bg-[#cc0000] border-[#cc0000]' : 'border-gray-300'}`}>
+                            {selectedRatings.includes(rating) && <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>}
+                          </div>
+                          <div className="flex items-center gap-0.5">
+                            {[...Array(5)].map((_, i) => (
+                              <svg key={i} className={`w-4 h-4 ${i < rating ? 'text-amber-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                              </svg>
+                            ))}
+                          </div>
+                          <span className={`text-xs font-medium ${selectedRatings.includes(rating) ? 'text-[#cc0000]' : 'text-gray-500'}`}>& up</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
-                {/* Show More Button */}
-                {filteredCategories.length > 5 && (
-                  <button
-                    onClick={() => setShowMoreCategories(!showMoreCategories)}
-                    className="w-full mt-3 py-2 bg-gray-800 text-white text-sm font-semibold rounded hover:bg-gray-900 transition-colors"
-                  >
-                    {showMoreCategories ? 'Show Less' : 'Show More'}
+        <div className="flex gap-6 items-start">
+
+          {/* Left Sidebar - sticky, desktop only */}
+          <aside
+            className={`hidden md:block flex-shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-72' : 'w-0 overflow-hidden'}`}
+            style={{ position: 'sticky', top: '80px', maxHeight: 'calc(100vh - 96px)', overflowY: 'auto', alignSelf: 'flex-start' }}
+          >
+            <div className="space-y-4 pr-1 scrollbar-thin">
+
+              {/* Filter Header */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <svg className="w-5 h-5 text-[#cc0000]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                  </svg>
+                  <h2 className="text-base font-bold text-gray-900">Filters</h2>
+                  {activeFilters.length > 0 && (
+                    <span className="bg-[#cc0000] text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center">
+                      {activeFilters.length}
+                    </span>
+                  )}
+                </div>
+                {activeFilters.length > 0 && (
+                  <button onClick={clearAllFilters} className="text-xs text-[#cc0000] font-semibold hover:underline">
+                    Clear all
                   </button>
                 )}
               </div>
 
-              {/* Price Range Filter */}
-              <div className="mb-5 pb-5 border-b border-gray-200">
-                <h3 className="text-base font-bold text-gray-900 mb-3">Price Range</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-gray-600">₹{priceRange[0]}</span>
-                    <span className="text-gray-600">₹{priceRange[1]}</span>
-                  </div>
-                  <div className="space-y-2">
+              {/* Categories */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Categories</h3>
+                </div>
+                <div className="p-3">
+                  {/* Search */}
+                  <div className="relative mb-3">
                     <input
-                      type="range"
-                      min="0"
-                      max="10000"
-                      step="100"
+                      type="text"
+                      placeholder="Search..."
+                      value={categorySearch}
+                      onChange={(e) => setCategorySearch(e.target.value)}
+                      className="w-full pl-8 pr-3 py-2 text-sm bg-gray-50 border border-gray-200 rounded-lg focus:outline-none focus:border-[#cc0000] focus:bg-white transition-all"
+                    />
+                    <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                  </div>
+
+                  {/* Category List */}
+                  <div className="space-y-0.5">
+                    {visibleCategories.map((cat) => (
+                      <button
+                        key={cat.value}
+                        onClick={() => setActiveCategory(cat.value)}
+                        className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-sm transition-all ${
+                          activeCategory === cat.value
+                            ? 'bg-[#cc0000] text-white'
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span className={`w-2 h-2 rounded-full flex-shrink-0 ${activeCategory === cat.value ? 'bg-white' : 'bg-gray-300'}`} />
+                          <span className="font-medium text-left">{cat.name}</span>
+                        </div>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
+                          activeCategory === cat.value ? 'bg-white/20 text-white' : 'bg-gray-100 text-gray-500'
+                        }`}>
+                          {cat.count}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {filteredCategories.length > 5 && (
+                    <button
+                      onClick={() => setShowMoreCategories(!showMoreCategories)}
+                      className="w-full mt-2 py-2 text-sm font-semibold text-[#cc0000] hover:bg-red-50 rounded-lg transition-colors flex items-center justify-center gap-1"
+                    >
+                      {showMoreCategories ? (
+                        <>Show Less <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" /></svg></>
+                      ) : (
+                        <>Show More <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg></>
+                      )}
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Price Range */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Price Range</h3>
+                  {(priceRange[0] > 0 || priceRange[1] < 10000) && (
+                    <button onClick={() => setPriceRange([0, 10000])} className="text-xs text-[#cc0000] font-semibold hover:underline">Reset</button>
+                  )}
+                </div>
+                <div className="p-4 space-y-4">
+                  {/* Price display */}
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-bold text-[#cc0000] bg-red-50 px-3 py-1.5 rounded-lg">₹{priceRange[0].toLocaleString()}</span>
+                    <div className="flex-1 h-px bg-gray-200 mx-3" />
+                    <span className="text-sm font-bold text-[#cc0000] bg-red-50 px-3 py-1.5 rounded-lg">₹{priceRange[1].toLocaleString()}</span>
+                  </div>
+
+                  {/* Sliders */}
+                  <div className="space-y-2 px-1">
+                    <input
+                      type="range" min="0" max="10000" step="100"
                       value={priceRange[0]}
-                      onChange={(e) => setPriceRange([parseInt(e.target.value), priceRange[1]])}
-                      className="w-full h-2 bg-gray-200 rounded appearance-none cursor-pointer accent-[#cc0000]"
+                      onChange={(e) => setPriceRange([Math.min(parseInt(e.target.value), priceRange[1] - 100), priceRange[1]])}
+                      className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-[#cc0000] bg-gray-200"
                     />
                     <input
-                      type="range"
-                      min="0"
-                      max="10000"
-                      step="100"
+                      type="range" min="0" max="10000" step="100"
                       value={priceRange[1]}
-                      onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value)])}
-                      className="w-full h-2 bg-gray-200 rounded appearance-none cursor-pointer accent-[#cc0000]"
+                      onChange={(e) => setPriceRange([priceRange[0], Math.max(parseInt(e.target.value), priceRange[0] + 100)])}
+                      className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-[#cc0000] bg-gray-200"
                     />
                   </div>
+
+                  {/* Min/Max inputs */}
                   <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      value={priceRange[0]}
-                      onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#cc0000]"
-                      placeholder="Min"
-                    />
-                    <span className="text-gray-400">—</span>
-                    <input
-                      type="number"
-                      value={priceRange[1]}
-                      onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
-                      className="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:outline-none focus:border-[#cc0000]"
-                      placeholder="Max"
-                    />
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-500 mb-1 block">Min</label>
+                      <input
+                        type="number" value={priceRange[0]}
+                        onChange={(e) => setPriceRange([parseInt(e.target.value) || 0, priceRange[1]])}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#cc0000] bg-gray-50"
+                        placeholder="0"
+                      />
+                    </div>
+                    <span className="text-gray-400 mt-5">—</span>
+                    <div className="flex-1">
+                      <label className="text-xs text-gray-500 mb-1 block">Max</label>
+                      <input
+                        type="number" value={priceRange[1]}
+                        onChange={(e) => setPriceRange([priceRange[0], parseInt(e.target.value) || 10000])}
+                        className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:border-[#cc0000] bg-gray-50"
+                        placeholder="10000"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* Rating Filter */}
-              <div className="mb-2">
-                <h3 className="text-base font-bold text-gray-900 mb-3">Customer Rating</h3>
-                <div className="space-y-1">
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
+                  <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Customer Rating</h3>
+                  {selectedRatings.length > 0 && (
+                    <button onClick={() => setSelectedRatings([])} className="text-xs text-[#cc0000] font-semibold hover:underline">Reset</button>
+                  )}
+                </div>
+                <div className="p-3 space-y-1">
                   {[5, 4, 3, 2, 1].map((rating) => (
-                    <label
+                    <button
                       key={rating}
-                      className="flex items-center justify-between p-2 rounded cursor-pointer transition-colors hover:bg-gray-50 group"
+                      onClick={() => toggleRating(rating)}
+                      className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg transition-all ${
+                        selectedRatings.includes(rating)
+                          ? 'bg-amber-50 border border-amber-200'
+                          : 'hover:bg-gray-50'
+                      }`}
                     >
-                      <div className="flex items-center gap-2.5">
-                        <input
-                          type="checkbox"
-                          checked={selectedRatings.includes(rating)}
-                          onChange={() => toggleRating(rating)}
-                          className="w-4 h-4 text-[#cc0000] border-gray-300 rounded focus:ring-[#cc0000] cursor-pointer accent-[#cc0000]"
-                        />
-                        <div className="flex items-center gap-1">
+                      <div className="flex items-center gap-2">
+                        <div className={`w-4 h-4 rounded border-2 flex items-center justify-center flex-shrink-0 transition-all ${
+                          selectedRatings.includes(rating) ? 'bg-[#cc0000] border-[#cc0000]' : 'border-gray-300'
+                        }`}>
+                          {selectedRatings.includes(rating) && (
+                            <svg className="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-0.5">
                           {[...Array(5)].map((_, i) => (
-                            <svg
-                              key={i}
-                              className={`w-4 h-4 ${i < rating ? 'text-yellow-400' : 'text-gray-300'}`}
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
+                            <svg key={i} className={`w-4 h-4 ${i < rating ? 'text-amber-400' : 'text-gray-200'}`} fill="currentColor" viewBox="0 0 20 20">
                               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
                           ))}
-                          <span className={`text-sm ml-1 ${selectedRatings.includes(rating) ? 'font-semibold text-[#cc0000]' : 'text-gray-600'}`}>
-                            & up
-                          </span>
                         </div>
+                        <span className={`text-xs font-medium ${selectedRatings.includes(rating) ? 'text-[#cc0000]' : 'text-gray-500'}`}>& up</span>
                       </div>
-                    </label>
+                    </button>
                   ))}
                 </div>
               </div>
+
             </div>
           </aside>
 
@@ -446,25 +760,23 @@ export default function Shop() {
             {/* Toolbar */}
             <div className="mb-5">
               {/* Top Row: Results count, view toggle, sort */}
-              <div className="flex items-center justify-between mb-4 bg-white p-3 rounded border border-gray-200">
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-4 bg-white p-3 rounded border border-gray-200">
                 <div className="flex items-center gap-3">
-                  {!sidebarOpen && (
-                    <button
-                      onClick={() => setSidebarOpen(true)}
-                      className="flex items-center gap-2 px-3 py-2 bg-[#cc0000] text-white rounded hover:bg-[#a00000] transition-colors text-sm font-semibold"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                      </svg>
-                      Filters
-                    </button>
-                  )}
-                  <p className="text-sm text-gray-600">
+                  <button
+                    onClick={() => setSidebarOpen(!sidebarOpen)}
+                    className="hidden md:flex items-center gap-2 px-3 py-2 border border-gray-300 text-gray-700 rounded hover:border-[#cc0000] hover:text-[#cc0000] transition-colors text-sm font-semibold"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                    {sidebarOpen ? 'Hide' : 'Filters'}
+                  </button>
+                  <p className="text-sm text-gray-600 hidden sm:block">
                     Showing <span className="font-bold text-gray-900">{startIndex + 1}-{Math.min(endIndex, filtered.length)}</span> of <span className="font-bold text-gray-900">{filtered.length}</span> results
                   </p>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 flex-wrap">
                   {/* View Toggle */}
                   <div className="flex items-center gap-1 bg-gray-100 p-1 rounded">
                     <button
@@ -488,8 +800,8 @@ export default function Shop() {
                   </div>
 
                   {/* Sort Dropdown */}
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600 font-medium">Sort:</span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm text-gray-600 font-medium hidden sm:inline">Sort:</span>
                     <div className="relative">
                       <select
                         value={sortBy}
@@ -509,7 +821,7 @@ export default function Shop() {
                   </div>
 
                   {/* Items per page */}
-                  <div className="flex items-center gap-2">
+                  <div className="hidden sm:flex items-center gap-1.5">
                     <span className="text-sm text-gray-600 font-medium">Show:</span>
                     <select
                       value={itemsPerPage}
@@ -562,12 +874,20 @@ export default function Shop() {
               )}
             </div>
 
-            {/* Products Grid */}
-            <div className={`grid ${viewMode === 'grid' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'} gap-6`}>
-              {currentProducts.map((p) => (
-                <LifestyleCard key={p.id} card={p} />
-              ))}
-            </div>
+            {/* Products Grid / List */}
+            {viewMode === 'grid' ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {currentProducts.map((p) => (
+                  <LifestyleCard key={p.id} card={p} />
+                ))}
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {currentProducts.map((p) => (
+                  <ListCard key={p.id} card={p} />
+                ))}
+              </div>
+            )}
 
             {/* Pagination */}
             {filtered.length > 0 && totalPages > 1 && (
@@ -632,7 +952,7 @@ export default function Shop() {
                 </div>
 
                 {/* Quick jump */}
-                <div className="flex items-center gap-2">
+                <div className="hidden sm:flex items-center gap-2">
                   <span className="text-sm text-gray-600">Go to:</span>
                   <input
                     type="number"

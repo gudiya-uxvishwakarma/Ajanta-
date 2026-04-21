@@ -250,29 +250,29 @@ export default function Navbar() {
   }, 0);
 
   return (
-    <>
+    <nav className="sticky top-0 z-50 bg-white">
       {/* Top Bar - Hides on scroll */}
       <div 
-        className={`bg-gray-50 border-b border-gray-200 hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
+        className={`bg-[#cc0000] hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
           isScrolled ? 'h-0 opacity-0 pointer-events-none' : 'h-10 opacity-100'
         }`}
         style={{ willChange: isScrolled ? 'auto' : 'height, opacity' }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
           <div className="flex items-center justify-between h-full text-xs">
-            <div className="flex items-center space-x-6 text-gray-600">
-              <a href="tel:+1234567890" className="flex items-center space-x-1 hover:text-[#cc0000] transition-colors">
+            <div className="flex items-center space-x-6 text-white">
+              <a href="tel:+1234567890" className="flex items-center space-x-1 hover:text-white/80 transition-colors">
                 <FiPhone className="w-3.5 h-3.5" />
                 <span>+91 1234567890</span>
               </a>
-              <span className="text-gray-300">|</span>
+              <span className="text-white/40">|</span>
               <span className="flex items-center space-x-1">
-                <span className="inline-block w-1.5 h-1.5 bg-green-500 rounded-full"></span>
-                <span>Free Shipping on Orders Above <span className="text-[#cc0000] font-semibold">₹999</span></span>
+                <span className="inline-block w-1.5 h-1.5 bg-white rounded-full"></span>
+                <span>Free Shipping on Orders Above <span className="font-bold">₹999</span></span>
               </span>
             </div>
-            <div className="flex items-center space-x-4 text-gray-600">
-              <button className="flex items-center space-x-1 hover:text-[#cc0000] transition-colors">
+            <div className="flex items-center space-x-4 text-white">
+              <button className="flex items-center space-x-1 hover:text-white/80 transition-colors">
                 <FiMapPin className="w-3.5 h-3.5" />
                 <span>Location</span>
                 <FiChevronDown className="w-3 h-3" />
@@ -1136,6 +1136,6 @@ export default function Navbar() {
           )}
         </AnimatePresence>
       </div>
-    </>
+    </nav>
   );
 }
