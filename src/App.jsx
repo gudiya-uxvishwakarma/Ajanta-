@@ -10,6 +10,10 @@ import AboutBrand from './pages/AboutBrand'
 import Contact from './pages/Contact'
 import ProductDetail from './pages/ProductDetail'
 import Checkout from './pages/Checkout'
+import Account from './pages/Account'
+import Orders from './pages/Orders'
+import Wallet from './pages/Wallet'
+import Vouchers from './pages/Vouchers'
 import AdminApp from './admin/AdminApp'
 
 if ('scrollRestoration' in window.history) {
@@ -51,6 +55,10 @@ function StoreFront() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/product/:id" element={<ProductDetail />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/account" element={<Account />} />
+          <Route path="/orders" element={<Orders />} />
+          <Route path="/wallet" element={<Wallet />} />
+          <Route path="/vouchers" element={<Vouchers />} />
         </Routes>
       </main>
       <Footer />

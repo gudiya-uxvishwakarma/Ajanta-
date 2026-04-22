@@ -685,14 +685,42 @@ export default function Navbar() {
               <button className="p-2 hover:bg-gray-100 rounded-lg">
                 <FiSearch className="w-5 h-5 text-gray-700" />
               </button>
-              <Link to="/checkout" className="relative p-2 hover:bg-gray-100 rounded-lg">
+              
+              {/* Wishlist Icon */}
+              <button 
+                onClick={() => setIsWishlistOpen(!isWishlistOpen)}
+                className="relative p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <FiHeart className="w-5 h-5 text-gray-700" />
+                {wishlistCount > 0 && (
+                  <span className="absolute top-0 right-0 bg-[#cc0000] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {wishlistCount}
+                  </span>
+                )}
+              </button>
+              
+              {/* Cart Icon */}
+              <button 
+                onClick={() => setIsCartOpen(!isCartOpen)}
+                className="relative p-2 hover:bg-gray-100 rounded-lg"
+              >
                 <FiShoppingCart className="w-5 h-5 text-gray-700" />
                 {cartCount > 0 && (
                   <span className="absolute top-0 right-0 bg-[#cc0000] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {cartCount}
                   </span>
                 )}
-              </Link>
+              </button>
+              
+              {/* Account Icon */}
+              <button 
+                onClick={() => setIsAccountOpen(!isAccountOpen)}
+                className="relative p-2 hover:bg-gray-100 rounded-lg"
+              >
+                <FiUser className="w-5 h-5 text-gray-700" />
+              </button>
+              
+              {/* Menu Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="p-2 hover:bg-gray-100 rounded-lg"
@@ -1058,7 +1086,7 @@ export default function Navbar() {
                                         {subcategory.items.map((item, itemIndex) => (
                                           <li key={itemIndex}>
                                             <Link
-                                              to={`/shop?category=${item.toLowerCase().replace(/ /g, '-')}`}
+                                              to={`/shop?filter=${item.toLowerCase().replace(/ /g, '-')}`}
                                               className="text-sm text-gray-600 hover:text-[#cc0000] transition-colors block py-1"
                                               onClick={() => setIsCategoriesOpen(false)}
                                             >
@@ -1074,7 +1102,7 @@ export default function Navbar() {
                                 {/* View All Link */}
                                 <div className="mt-8 pt-6 border-t border-gray-200">
                                   <Link
-                                    to={`/shop?category=${categories[hoveredCategory].name.toLowerCase().replace(/ /g, '-')}`}
+                                    to={`/shop?filter=${categories[hoveredCategory].name.toLowerCase().replace(/ /g, '-')}`}
                                     className="inline-flex items-center space-x-2 text-[#cc0000] font-semibold hover:underline"
                                     onClick={() => setIsCategoriesOpen(false)}
                                   >
@@ -1120,6 +1148,7 @@ export default function Navbar() {
               className="lg:hidden border-t border-gray-200 overflow-hidden"
             >
               <div className="p-4 space-y-2">
+                {/* Navigation Links */}
                 {navLinks.map((link) => (
                   <Link
                     key={link.path}
@@ -1131,6 +1160,269 @@ export default function Navbar() {
                     {link.label}
                   </Link>
                 ))}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Mobile Wishlist Dropdown */}
+        <AnimatePresence>
+          {isWishlistOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="lg:hidden border-t border-gray-200 overflow-hidden bg-white"
+            >
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-bold text-gray-900">Wishlist</h3>
+                  <span className="text-sm text-gray-500">{wishlistCount} items</span>
+                </div>
+                {wishlistItems.length > 0 ? (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {wishlistItems.map((item) => (
+                      <div key={item.id} className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                        <img src={item.images?.[0] || item.img} alt={item.title} className="w-16 h-16 object-cover rounded" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold text-gray-900 truncate">{item.title}</p>
+                          <p className="text-sm font-bold text-gray-900 mt-1">{item.price}</p>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              dispatch(addToCart({ product: item, qty: 1 }));
+                              dispatch(toggleWishlist(item));
+                            }}
+                            className="p-2 text-[#cc0000] hover:bg-red-50 rounded"
+                          >
+                            <FiShoppingCart className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              dispatch(toggleWishlist(item));
+                            }}
+                            className="p-2 text-gray-500 hover:bg-gray-100 rounded"
+                          >
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                    <Link
+                      to="/shop"
+                      className="block w-full bg-[#cc0000] text-white text-center py-3 rounded-lg font-semibold hover:bg-[#b30000] transition-colors mt-3"
+                      onClick={() => setIsWishlistOpen(false)}
+                    >
+                      Continue Shopping
+                    </Link>
+                  </div>
+                ) : (
+                  <div className="text-center py-8">
+                    <FiHeart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 mb-4">Your wishlist is empty</p>
+                    <Link
+                      to="/shop"
+                      className="inline-block text-[#cc0000] font-semibold hover:underline"
+                      onClick={() => setIsWishlistOpen(false)}
+                    >
+                      Start Shopping
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Mobile Cart Dropdown */}
+        <AnimatePresence>
+          {isCartOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="lg:hidden border-t border-gray-200 overflow-hidden bg-white"
+            >
+              <div className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-base font-bold text-gray-900">Shopping Cart</h3>
+                  <span className="text-sm text-gray-500">{cartCount} items</span>
+                </div>
+                {cartItems.length > 0 ? (
+                  <>
+                    <div className="space-y-2 max-h-64 overflow-y-auto mb-4">
+                      {cartItems.map((item) => (
+                        <div key={item.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
+                          <img src={item.images?.[0] || item.img} alt={item.title} className="w-16 h-16 object-cover rounded flex-shrink-0" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 truncate mb-1">{item.title}</p>
+                            <p className="text-sm font-bold text-gray-900 mb-2">{item.price}</p>
+                            <div className="flex items-center gap-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (item.qty > 1) {
+                                    dispatch(updateQuantity({ id: item.id, qty: item.qty - 1 }));
+                                  } else {
+                                    dispatch(updateQuantity({ id: item.id, qty: 0 }));
+                                  }
+                                }}
+                                className="w-7 h-7 flex items-center justify-center bg-white hover:bg-gray-100 rounded-md transition-colors"
+                              >
+                                <MdRemove className="text-gray-700" />
+                              </button>
+                              <span className="text-sm font-semibold text-gray-900 min-w-[24px] text-center">{item.qty}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  dispatch(updateQuantity({ id: item.id, qty: item.qty + 1 }));
+                                }}
+                                className="w-7 h-7 flex items-center justify-center bg-white hover:bg-gray-100 rounded-md transition-colors"
+                              >
+                                <MdAdd className="text-gray-700" />
+                              </button>
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              dispatch(removeFromCart(item.id));
+                            }}
+                            className="text-[#cc0000] hover:text-[#b30000] flex-shrink-0 p-2"
+                          >
+                            <FiTrash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-lg mb-3">
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Subtotal</span>
+                          <span className="font-semibold text-gray-900">₹{cartTotal.toFixed(2)}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600">Shipping</span>
+                          <span className="font-semibold text-green-600">
+                            {cartTotal >= 999 ? 'FREE' : '₹50.00'}
+                          </span>
+                        </div>
+                        <div className="h-px bg-gray-200 my-2"></div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-base font-semibold text-gray-900">Total</span>
+                          <span className="text-lg font-bold text-gray-900">
+                            ₹{(cartTotal + (cartTotal >= 999 ? 0 : 50)).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <Link
+                      to="/checkout"
+                      className="block w-full bg-[#cc0000] text-white text-center py-3 rounded-lg font-semibold hover:bg-[#b30000] transition-colors"
+                      onClick={() => setIsCartOpen(false)}
+                    >
+                      View Cart & Checkout
+                    </Link>
+                  </>
+                ) : (
+                  <div className="text-center py-8">
+                    <FiShoppingCart className="w-12 h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 mb-4">Your cart is empty</p>
+                    <Link
+                      to="/shop"
+                      className="inline-block text-[#cc0000] font-semibold hover:underline"
+                      onClick={() => setIsCartOpen(false)}
+                    >
+                      Start Shopping
+                    </Link>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Mobile Account Dropdown */}
+        <AnimatePresence>
+          {isAccountOpen && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="lg:hidden border-t border-gray-200 overflow-hidden bg-white"
+            >
+              <div className="p-4">
+                <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg mb-3">
+                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
+                    <FiUser className="w-6 h-6 text-gray-600" />
+                  </div>
+                  <div>
+                    <p className="font-semibold text-gray-900">Guest User</p>
+                    <p className="text-xs text-gray-500">guest@ajanta.com</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-1">
+                  <Link
+                    to="/account"
+                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                    onClick={() => setIsAccountOpen(false)}
+                  >
+                    <FiUser className="w-5 h-5 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">My Account</span>
+                  </Link>
+                  <Link
+                    to="/orders"
+                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                    onClick={() => setIsAccountOpen(false)}
+                  >
+                    <FiPackage className="w-5 h-5 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">My Orders</span>
+                  </Link>
+                  <Link
+                    to="/wallet"
+                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                    onClick={() => setIsAccountOpen(false)}
+                  >
+                    <FiCreditCard className="w-5 h-5 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">My Wallet</span>
+                  </Link>
+                  <Link
+                    to="/checkout"
+                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                    onClick={() => setIsAccountOpen(false)}
+                  >
+                    <FiHeart className="w-5 h-5 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">Favourite Items</span>
+                  </Link>
+                  <Link
+                    to="/vouchers"
+                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                    onClick={() => setIsAccountOpen(false)}
+                  >
+                    <FiGift className="w-5 h-5 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">Vouchers & Gift Cards</span>
+                  </Link>
+                  <Link
+                    to="/contact"
+                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors"
+                    onClick={() => setIsAccountOpen(false)}
+                  >
+                    <FiHeadphones className="w-5 h-5 text-gray-600" />
+                    <span className="text-sm font-medium text-gray-700">Service</span>
+                  </Link>
+                  <div className="h-px bg-gray-200 my-2"></div>
+                  <button 
+                    className="flex items-center space-x-3 px-3 py-3 hover:bg-red-50 rounded-lg transition-colors w-full text-left"
+                    onClick={() => setIsAccountOpen(false)}
+                  >
+                    <FiLogOut className="w-5 h-5 text-[#cc0000]" />
+                    <span className="text-sm font-medium text-[#cc0000]">Sign Out</span>
+                  </button>
+                </div>
               </div>
             </motion.div>
           )}

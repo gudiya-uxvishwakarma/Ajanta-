@@ -78,22 +78,19 @@ export default function HeroSection() {
   };
 
   const slideVariants = {
-    enter: (direction) => ({
-      x: direction > 0 ? 1000 : -1000,
+    enter: () => ({
       opacity: 0,
-      scale: 0.8
+      scale: 0.95
     }),
     center: {
       zIndex: 1,
-      x: 0,
       opacity: 1,
       scale: 1
     },
-    exit: (direction) => ({
+    exit: () => ({
       zIndex: 0,
-      x: direction < 0 ? 1000 : -1000,
       opacity: 0,
-      scale: 0.8
+      scale: 0.95
     })
   };
 
@@ -106,13 +103,13 @@ export default function HeroSection() {
           style={{ y: y1 }}
           variants={floatingVariants}
           animate="animate"
-          className="absolute top-20 right-20 w-96 h-96 bg-gradient-to-r from-purple-400/30 to-pink-400/30 rounded-full blur-3xl"
+          className="absolute top-20 right-20 w-64 h-64 md:w-96 md:h-96 bg-gradient-to-r from-purple-400/30 to-pink-400/30 rounded-full blur-3xl"
         />
         <motion.div
           style={{ y: y2 }}
           variants={floatingVariants}
           animate="animate"
-          className="absolute bottom-20 left-20 w-80 h-80 bg-gradient-to-r from-blue-400/30 to-cyan-400/30 rounded-full blur-3xl"
+          className="absolute bottom-20 left-20 w-56 h-56 md:w-80 md:h-80 bg-gradient-to-r from-blue-400/30 to-cyan-400/30 rounded-full blur-3xl"
         />
         
         {/* Animated Grid */}
@@ -132,24 +129,30 @@ export default function HeroSection() {
           }}
         />
         
-        {/* Floating Particles */}
-        {[...Array(20)].map((_, i) => (
+        {/* Floating Particles - fixed positions to avoid layout thrash */}
+        {[
+          { left: '10%', top: '15%', dur: 5, delay: 0 },
+          { left: '25%', top: '70%', dur: 6, delay: 0.5 },
+          { left: '40%', top: '30%', dur: 4, delay: 1 },
+          { left: '60%', top: '80%', dur: 7, delay: 0.3 },
+          { left: '75%', top: '20%', dur: 5, delay: 0.8 },
+          { left: '85%', top: '55%', dur: 6, delay: 1.2 },
+          { left: '50%', top: '10%', dur: 4, delay: 0.6 },
+          { left: '90%', top: '85%', dur: 5, delay: 0.2 },
+        ].map((p, i) => (
           <motion.div
             key={i}
             className="absolute w-2 h-2 bg-gradient-to-r from-blue-400 to-purple-400 rounded-full opacity-60"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
+            style={{ left: p.left, top: p.top }}
             animate={{
               y: [-20, 20, -20],
               x: [-10, 10, -10],
               opacity: [0.3, 0.8, 0.3],
             }}
             transition={{
-              duration: 4 + Math.random() * 4,
+              duration: p.dur,
               repeat: Infinity,
-              delay: Math.random() * 2,
+              delay: p.delay,
               ease: "easeInOut"
             }}
           />
@@ -157,16 +160,16 @@ export default function HeroSection() {
       </div>
 
       <motion.div 
-        className="container mx-auto px-4 py-20 md:py-32 relative z-10"
+        className="container mx-auto px-4 py-16 md:py-32 relative z-10"
         style={{ opacity }}
       >
-        <div className="grid md:grid-cols-2 gap-12 items-center min-h-[600px]">
+        <div className="grid md:grid-cols-2 gap-8 md:gap-12 items-center min-h-[600px]">
           {/* Left Content */}
           <motion.div
             variants={containerVariants}
             initial="hidden"
             animate="visible"
-            className="space-y-8 z-10"
+            className="space-y-6 md:space-y-8 z-10"
           >
             {/* Animated Badge */}
             <motion.div
@@ -174,7 +177,7 @@ export default function HeroSection() {
               className="inline-block"
             >
               <motion.span
-                className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white px-6 py-3 rounded-full text-sm font-bold shadow-2xl flex items-center gap-3 w-fit backdrop-blur-sm border border-white/20"
+                className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white px-5 py-2.5 md:px-6 md:py-3 rounded-full text-xs md:text-sm font-bold shadow-2xl flex items-center gap-2 md:gap-3 w-fit backdrop-blur-sm border border-white/20"
                 animate={{
                   backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
                 }}
@@ -190,7 +193,7 @@ export default function HeroSection() {
                   animate={{ rotate: 360 }}
                   transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
                 >
-                  <FiZap className="w-4 h-4" />
+                  <FiZap className="w-3 h-3 md:w-4 md:h-4" />
                 </motion.div>
                 {heroSlides[currentSlide].badge}
               </motion.span>
@@ -200,12 +203,12 @@ export default function HeroSection() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={currentSlide}
-                initial={{ opacity: 0, y: 50 }}
+                initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -50 }}
-                transition={{ duration: 0.8, ease: [0.25, 0.46, 0.45, 0.94] }}
+                exit={{ opacity: 0, y: -30 }}
+                transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
               >
-                <h1 className="text-5xl md:text-7xl font-black text-gray-900 leading-tight">
+                <h1 className="text-4xl sm:text-5xl md:text-7xl font-black text-gray-900 leading-tight">
                   {heroSlides[currentSlide].title}
                   <motion.span 
                     className="block text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600"
@@ -225,15 +228,51 @@ export default function HeroSection() {
               </motion.div>
             </AnimatePresence>
 
+            {/* Mobile Image Carousel */}
+            <motion.div
+              variants={itemVariants}
+              className="block md:hidden relative rounded-2xl overflow-hidden shadow-2xl"
+              style={{ height: '240px' }}
+            >
+              <AnimatePresence mode="wait">
+                <motion.img
+                  key={currentSlide}
+                  src={heroSlides[currentSlide].image}
+                  alt="Hero Product"
+                  className="absolute inset-0 w-full h-full object-cover"
+                  initial={{ opacity: 0, scale: 1.05 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.6, ease: "easeInOut" }}
+                />
+              </AnimatePresence>
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent rounded-2xl" />
+              {/* Mobile slide dots */}
+              <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-2">
+                {heroSlides.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentSlide(index)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      index === currentSlide
+                        ? 'bg-white w-6'
+                        : 'bg-white/50 w-2'
+                    }`}
+                  />
+                ))}
+              </div>
+            </motion.div>
+
             {/* Dynamic Description */}
             <AnimatePresence mode="wait">
               <motion.p
                 key={`desc-${currentSlide}`}
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -30 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
-                className="text-lg md:text-xl text-gray-600 max-w-lg leading-relaxed font-medium"
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                className="text-base md:text-xl text-gray-600 max-w-lg leading-relaxed font-medium"
               >
                 {heroSlides[currentSlide].description}
               </motion.p>
@@ -242,11 +281,11 @@ export default function HeroSection() {
             {/* Enhanced CTA Buttons */}
             <motion.div
               variants={itemVariants}
-              className="flex flex-wrap gap-4"
+              className="flex flex-wrap gap-3 md:gap-4"
             >
               <Link to="/shop">
                 <motion.button
-                  className="group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-8 py-4 rounded-full font-bold flex items-center gap-3 overflow-hidden shadow-2xl"
+                  className="group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full font-bold flex items-center gap-2 md:gap-3 overflow-hidden shadow-2xl text-sm md:text-base"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
@@ -256,7 +295,7 @@ export default function HeroSection() {
                     animate={{ x: [0, 5, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                   >
-                    <FiArrowRight className="w-5 h-5" />
+                    <FiArrowRight className="w-4 h-4 md:w-5 md:h-5" />
                   </motion.div>
                   
                   {/* Shimmer Effect */}
@@ -270,11 +309,11 @@ export default function HeroSection() {
               </Link>
               
               <motion.button
-                className="group bg-white/80 backdrop-blur-sm text-gray-900 px-8 py-4 rounded-full font-bold border-2 border-gray-200 hover:border-blue-500 hover:text-blue-600 transition-all shadow-xl flex items-center gap-3"
+                className="group bg-white/80 backdrop-blur-sm text-gray-900 px-6 py-3 md:px-8 md:py-4 rounded-full font-bold border-2 border-gray-200 hover:border-blue-500 hover:text-blue-600 transition-all shadow-xl flex items-center gap-2 md:gap-3 text-sm md:text-base"
                 whileHover={{ scale: 1.05, backgroundColor: 'rgba(255, 255, 255, 0.95)' }}
                 whileTap={{ scale: 0.95 }}
               >
-                <FiPlay className="w-5 h-5" />
+                <FiPlay className="w-4 h-4 md:w-5 md:h-5" />
                 Watch Demo
               </motion.button>
             </motion.div>
@@ -282,11 +321,11 @@ export default function HeroSection() {
             {/* Enhanced Stats */}
             <motion.div
               variants={itemVariants}
-              className="grid grid-cols-3 gap-6 pt-8"
+              className="grid grid-cols-3 gap-3 md:gap-6 pt-4 md:pt-8"
             >
               {[
                 { icon: FiTrendingUp, value: "50+", label: "Products", color: "text-blue-600" },
-                { icon: FiAward, value: "10K+", label: "Happy Customers", color: "text-purple-600" },
+                { icon: FiAward, value: "10K+", label: "Customers", color: "text-purple-600" },
                 { icon: "star", value: "4.8", label: "Rating", color: "text-yellow-500" }
               ].map((stat, index) => (
                 <motion.div
@@ -297,16 +336,16 @@ export default function HeroSection() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 0.8 + index * 0.1 }}
                 >
-                  <div className="flex items-center gap-3 mb-2 justify-center md:justify-start">
+                  <div className="flex items-center gap-1.5 md:gap-3 mb-1 md:mb-2 justify-center md:justify-start">
                     {stat.icon === "star" ? (
-                      <svg className={`w-6 h-6 ${stat.color}`} fill="currentColor" viewBox="0 0 20 20">
+                      <svg className={`w-4 h-4 md:w-6 md:h-6 ${stat.color}`} fill="currentColor" viewBox="0 0 20 20">
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     ) : (
-                      <stat.icon className={`w-6 h-6 ${stat.color}`} />
+                      <stat.icon className={`w-4 h-4 md:w-6 md:h-6 ${stat.color}`} />
                     )}
                     <motion.p 
-                      className="text-3xl font-black text-gray-900"
+                      className="text-xl md:text-3xl font-black text-gray-900"
                       initial={{ scale: 0 }}
                       animate={{ scale: 1 }}
                       transition={{ delay: 1 + index * 0.1, type: "spring", stiffness: 200 }}
@@ -314,7 +353,7 @@ export default function HeroSection() {
                       {stat.value}
                     </motion.p>
                   </div>
-                  <p className="text-sm text-gray-600 font-medium">{stat.label}</p>
+                  <p className="text-xs md:text-sm text-gray-600 font-medium">{stat.label}</p>
                 </motion.div>
               ))}
             </motion.div>

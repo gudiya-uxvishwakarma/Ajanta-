@@ -40,6 +40,15 @@ body {
   background-color: #cc0000;
 }
 
+/* Hide scrollbar for horizontal scroll */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
 /* Ensure sticky works inside flex */
 .shop-layout {
   align-items: flex-start;

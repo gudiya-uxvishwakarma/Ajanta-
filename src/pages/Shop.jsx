@@ -197,7 +197,65 @@ export default function Shop() {
   }, [activeCategory, urlSearch, priceRange, selectedRatings]);
 
   const urlCategoryMap = {
+    // From home page category banners
+    "wall-clock":        ["Wall Clock", "Clock"],
+    "wall-clocks":       ["Wall Clock", "Clock"],
+    "table-clock":       ["Table Clock", "Alarm Clock"],
+    "table-clocks":      ["Table Clock", "Alarm Clock"],
     "hand-torch":        ["Hand Torch"],
+    "led-light":         ["LED", "Emergency Light"],
+    "led-lights":        ["LED", "Emergency Light"],
+    "designer":          ["Clock", "Wall Clock", "Table Clock"],
+    "classic":           ["Clock", "Wall Clock"],
+    
+    // Wall Clocks subcategories
+    "analog-clocks":     ["Wall Clock", "Clock"],
+    "digital-clocks":    ["Clock"],
+    "decorative-clocks": ["Wall Clock", "Clock"],
+    "vintage-clocks":    ["Wall Clock", "Clock"],
+    "modern-clocks":     ["Wall Clock", "Clock"],
+    "minimalist":        ["Wall Clock", "Clock"],
+    "wooden-clocks":     ["Wall Clock", "Clock"],
+    "metal-clocks":      ["Wall Clock", "Clock"],
+    "plastic-clocks":    ["Clock"],
+    "glass-clocks":      ["Wall Clock", "Clock"],
+    
+    // Table Clocks subcategories
+    "alarm-clocks":      ["Alarm Clock", "Table Clock"],
+    "desk-clocks":       ["Table Clock", "Clock"],
+    "travel-clocks":     ["Table Clock", "Clock"],
+    "smart-clocks":      ["Table Clock", "Clock"],
+    "led-clocks":        ["Table Clock", "Clock"],
+    
+    // LED Lights subcategories
+    "bulbs":             ["LED"],
+    "tube-lights":       ["LED"],
+    "panel-lights":      ["LED"],
+    "downlights":        ["LED"],
+    "ceiling-lights":    ["LED"],
+    "smart-bulbs":       ["LED"],
+    "rgb-lights":        ["LED"],
+    "dimmable-lights":   ["LED"],
+    "emergency-lights":  ["Emergency Light"],
+    "rechargeable-lights": ["Emergency Light"],
+    "inverter-bulbs":    ["LED"],
+    
+    // Fans subcategories
+    "ceiling-fans":      ["Home Appliance"],
+    "table-fans":        ["Home Appliance"],
+    "wall-fans":         ["Home Appliance"],
+    "exhaust-fans":      ["Home Appliance"],
+    "pedestal-fans":     ["Home Appliance"],
+    "bldc-fans":         ["Home Appliance"],
+    
+    // Torches subcategories
+    "led-torches":       ["Hand Torch"],
+    "rechargeable-torches": ["Hand Torch"],
+    "lanterns":          ["Hand Torch"],
+    "headlamps":         ["Hand Torch"],
+    "torches":           ["Hand Torch"],
+    
+    // Additional categories
     "emergency-light":   ["Emergency Light"],
     "clock":             ["Clock", "Clock Accessory"],
     "alarm-clock":       ["Alarm Clock"],
@@ -876,7 +934,8 @@ export default function Shop() {
 
             {/* Products Grid / List */}
             {viewMode === 'grid' ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              /* Mobile: 2 columns, Desktop: 3 columns Grid */
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {currentProducts.map((p) => (
                   <LifestyleCard key={p.id} card={p} />
                 ))}
