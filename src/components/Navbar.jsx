@@ -12,6 +12,8 @@ import {
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MdAdd, MdRemove } from 'react-icons/md';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../config/api';
 
 export default function Navbar() {
   const dispatch = useDispatch();
@@ -23,6 +25,14 @@ export default function Navbar() {
   const cartCount = useSelector(state => state.cart.totalQuantity);
   const wishlistItems = useSelector(state => state.wishlist.items);
   const wishlistCount = useSelector(state => state.wishlist.totalCount);
+  
+  // Website settings state
+  const [websiteSettings, setWebsiteSettings] = useState({
+    websiteTitle: 'Ajanta',
+    contactEmail: 'info@ajanta.com',
+    contactPhone: '+91 9876543210',
+    freeShippingThreshold: 999
+  });
   
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -37,6 +47,43 @@ export default function Navbar() {
   const accountRef = useRef(null);
   const categoriesRef = useRef(null);
   const navbarRef = useRef(null);
+
+  // Fetch website settings
+  useEffect(() => {
+    const fetchWebsiteSettings = async () => {
+      try {
+        console.log('Fetching website settings from:', API_ENDPOINTS.publicWebsiteSettings);
+        const response = await axios.get(API_ENDPOINTS.publicWebsiteSettings);
+        console.log('Website settings response:', response.data);
+        const settings = response.data.settings || {};
+        const newSettings = {
+          websiteTitle: settings.websiteTitle || 'Ajanta',
+          contactEmail: settings.contactEmail || 'info@ajanta.com',
+          contactPhone: settings.contactPhone || '+91 9876543210',
+          freeShippingThreshold: settings.freeShippingThreshold || 999
+        };
+        console.log('Setting website settings to:', newSettings);
+        setWebsiteSettings(newSettings);
+        
+        // Update document title
+        if (settings.websiteTitle) {
+          document.title = settings.websiteTitle;
+        }
+      } catch (error) {
+        console.error("Error fetching website settings:", error);
+        console.error("Error details:", error.response?.data || error.message);
+        // Set defaults on error
+        setWebsiteSettings({
+          websiteTitle: 'Ajanta',
+          contactEmail: 'info@ajanta.com',
+          contactPhone: '+91 9876543210',
+          freeShippingThreshold: 999
+        });
+      }
+    };
+
+    fetchWebsiteSettings();
+  }, []);
 
   // Update button positions when dropdowns open
   const updateButtonPosition = (ref, type) => {
@@ -261,22 +308,20 @@ export default function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
           <div className="flex items-center justify-between h-full text-xs">
             <div className="flex items-center space-x-6 text-white">
-              <a href="tel:+1234567890" className="flex items-center space-x-1 hover:text-white/80 transition-colors">
+              <a href={`tel:${websiteSettings.contactPhone}`} className="flex items-center space-x-1 hover:text-white/80 transition-colors">
                 <FiPhone className="w-3.5 h-3.5" />
-                <span>+91 1234567890</span>
+                <span>{websiteSettings.contactPhone}</span>
               </a>
               <span className="text-white/40">|</span>
               <span className="flex items-center space-x-1">
                 <span className="inline-block w-1.5 h-1.5 bg-white rounded-full"></span>
-                <span>Free Shipping on Orders Above <span className="font-bold">₹999</span></span>
+                <span>Free Shipping on Orders Above <span className="font-bold">₹{websiteSettings.freeShippingThreshold}</span></span>
               </span>
             </div>
             <div className="flex items-center space-x-4 text-white">
-              <button className="flex items-center space-x-1 hover:text-white/80 transition-colors">
-                <FiMapPin className="w-3.5 h-3.5" />
-                <span>Location</span>
-                <FiChevronDown className="w-3 h-3" />
-              </button>
+              <a href={`mailto:${websiteSettings.contactEmail}`} className="flex items-center space-x-1 hover:text-white/80 transition-colors">
+                <span>{websiteSettings.contactEmail}</span>
+              </a>
             </div>
           </div>
         </div>
@@ -295,14 +340,14 @@ export default function Navbar() {
                 <Link to="/" className="flex-shrink-0">
                   <img
                     src="/Ajanta logo.png"
-                    alt="Ajanta"
+                    alt={websiteSettings.websiteTitle}
                     className="h-12 w-auto"
                     onError={(e) => {
                       e.target.style.display = 'none';
                       e.target.nextSibling.style.display = 'block';
                     }}
                   />
-                  <span className="hidden text-2xl font-black text-[#1a1a1a]">AJANTA</span>
+                  <span className="hidden text-2xl font-black text-[#1a1a1a]">{websiteSettings.websiteTitle}</span>
                 </Link>
 
                 {/* Desktop Search */}
@@ -751,14 +796,14 @@ export default function Navbar() {
                   <Link to="/" className="flex-shrink-0">
                     <img
                       src="/Ajanta logo.png"
-                      alt="Ajanta"
+                      alt={websiteSettings.websiteTitle}
                       className="h-8 w-auto"
                       onError={(e) => {
                         e.target.style.display = 'none';
                         e.target.nextSibling.style.display = 'block';
                       }}
                     />
-                    <span className="hidden text-xl font-black text-[#1a1a1a]">AJANTA</span>
+                    <span className="hidden text-xl font-black text-[#1a1a1a]">{websiteSettings.websiteTitle}</span>
                   </Link>
 
                   {/* Compact Search */}

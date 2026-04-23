@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+﻿import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,6 +7,8 @@ import { addToCart, updateQuantity } from "../store/cartSlice";
 import { toggleWishlist } from "../store/wishlistSlice";
 import { MdLocalShipping, MdLock, MdVerifiedUser, MdReplay, MdTrendingUp, MdRemoveRedEye, MdStar, MdStarBorder, MdFavoriteBorder, MdFavorite, MdAdd, MdRemove, MdShoppingCart, MdFlashOn } from "react-icons/md";
 import { FaTruck, FaShieldAlt, FaUndo, FaAward } from "react-icons/fa";
+import axios from "axios";
+import { API_ENDPOINTS } from "../config/api";
 
 const initialReviews = [
   { name: "Rahul Sharma", date: "08/05/2025", rating: 4, text: "Best gift! Look great, value for money, quality best." },
@@ -85,7 +87,59 @@ export default function ProductDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const product = allProducts.find(p => p.id === Number(id));
+
+  // Try static data first, then fetch from API
+  const staticProduct = allProducts.find(p => p.id === Number(id));
+  const [product, setProduct] = useState(staticProduct || null);
+  const [loadingProduct, setLoadingProduct] = useState(!staticProduct);
+
+  // Fetch from API if not found in static data
+  useEffect(() => {
+    if (staticProduct) return; // already have it
+
+    const fetchProduct = async () => {
+      try {
+        setLoadingProduct(true);
+        const response = await axios.get(`${API_ENDPOINTS.publicProducts}`, {
+          params: { search: id, limit: 1 }
+        });
+        // Try to find by _id
+        const allRes = await axios.get(`http://192.168.1.27:4000/api/admin/getPublicProducts?limit=200`);
+        const found = allRes.data.products?.find(p => p._id === id);
+        if (found) {
+          // Normalize API product to match ProductDetail expectations
+          const specsObj = found.specs instanceof Map
+            ? Object.fromEntries(found.specs)
+            : (found.specs || {});
+
+          setProduct({
+            id: found._id,
+            title: found.productname,
+            sku: found.sku || found.hsn,
+            price: `₹ ${found.price}`,
+            old_price: found.old_price ? `₹ ${found.old_price}` : null,
+            tag: found.tag || null,
+            soldOut: found.soldOut || false,
+            category: found.producttype,
+            colour: found.colour || null,
+            description: found.description || "",
+            features: Array.isArray(found.features) ? found.features : [],
+            specs: specsObj,
+            images: found.images?.length
+              ? found.images.map(img => `http://192.168.1.27:4000/product/${img}`)
+              : [`http://192.168.1.27:4000/product/${found.Image1}`],
+            img: `http://192.168.1.27:4000/product/${found.Image1}`,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching product:", error);
+      } finally {
+        setLoadingProduct(false);
+      }
+    };
+
+    fetchProduct();
+  }, [id, staticProduct]);
   
   // Redux selectors
   const cartItems = useSelector(state => state.cart.items);
@@ -105,6 +159,12 @@ export default function ProductDetail() {
   
   // Check if product is in wishlist
   const isWishlisted = wishlistItems.some(item => item.id === product?.id);
+
+  if (loadingProduct) return (
+    <div className="min-h-screen flex items-center justify-center bg-white">
+      <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#cc0000]"></div>
+    </div>
+  );
 
   if (!product) return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-white">
@@ -474,6 +534,11 @@ export default function ProductDetail() {
                             ))}
                             {product.colour && <div className="flex gap-4 text-[13px]"><span className="text-gray-500 w-44 shrink-0 font-medium">Colour</span><span className="text-gray-800 font-semibold">{product.colour}</span></div>}
                           </div>
+                        ) : item.title === "Product Description" ? (
+                          <div
+                            className="text-[13px] text-gray-700 leading-relaxed font-medium prose prose-sm max-w-none"
+                            dangerouslySetInnerHTML={{ __html: item.content }}
+                          />
                         ) : (
                           <p className="text-[13px] text-gray-700 leading-relaxed font-medium">{item.content}</p>
                         )}

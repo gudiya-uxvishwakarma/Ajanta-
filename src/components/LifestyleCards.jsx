@@ -27,8 +27,8 @@ export function LifestyleCard({ card }) {
   const isWishlisted = wishlistItems.some(item => item.id === card.id);
   const isInCart = cartItems.some(item => item.id === card.id);
 
-  const discount = card.old_price 
-    ? Math.round(((parseInt(card.old_price.replace(/[^\d]/g, "")) - parseInt(card.price.replace(/[^\d]/g, ""))) / parseInt(card.old_price.replace(/[^\d]/g, ""))) * 100)
+  const discount = card.old_price && card.price
+    ? Math.round(((parseInt(String(card.old_price).replace(/[^\d]/g, "")) - parseInt(String(card.price).replace(/[^\d]/g, ""))) / parseInt(String(card.old_price).replace(/[^\d]/g, ""))) * 100)
     : card.discount || 0;
 
   return (

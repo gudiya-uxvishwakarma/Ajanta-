@@ -2,44 +2,93 @@ import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion'
 import { FiArrowRight, FiZap, FiAward, FiTrendingUp, FiPlay } from 'react-icons/fi';
 import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
+import axios from 'axios';
+import { API_ENDPOINTS, getImageUrl } from '../config/api';
 
 export default function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [heroSlides, setHeroSlides] = useState([]);
+  const [loading, setLoading] = useState(true);
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 300], [0, -50]);
   const y2 = useTransform(scrollY, [0, 300], [0, -100]);
   const opacity = useTransform(scrollY, [0, 300], [1, 0.3]);
 
-  const heroSlides = [
+  // Default slides as fallback
+  const defaultSlides = [
     {
       title: "Illuminate Your",
       highlight: "World",
       description: "Discover premium quality lighting solutions from Ajanta. Brighten your space with our innovative and energy-efficient products.",
       image: "/hm1.jpg",
-      badge: "New Collection 2024"
+      badge: "New Collection 2024",
+      buttonText: "SHOP NOW",
+      buttonLink: "/shop"
     },
     {
       title: "Smart Lighting",
       highlight: "Solutions",
       description: "Experience the future of lighting with our smart, energy-efficient LED products designed for modern homes.",
       image: "/hm2.webp",
-      badge: "Smart Technology"
+      badge: "Smart Technology",
+      buttonText: "SHOP NOW",
+      buttonLink: "/shop"
     },
     {
       title: "Premium Quality",
       highlight: "Guaranteed",
       description: "Trust in Ajanta's legacy of excellence with products that combine durability, efficiency, and stunning design.",
       image: "/hm3.jpg",
-      badge: "Quality Assured"
+      badge: "Quality Assured",
+      buttonText: "SHOP NOW",
+      buttonLink: "/shop"
     }
   ];
 
+  // Fetch hero banners from API
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
-    }, 5000);
-    return () => clearInterval(timer);
+    const fetchHeroBanners = async () => {
+      try {
+        const response = await axios.get(API_ENDPOINTS.heroBanners);
+        
+        const banners = response.data.banners || [];
+        const activeBanners = banners
+          .filter(banner => banner.isActive)
+          .sort((a, b) => a.order - b.order)
+          .map(banner => ({
+            title: banner.title.split(' ').slice(0, -1).join(' ') || banner.title,
+            highlight: banner.title.split(' ').slice(-1)[0] || "",
+            description: banner.description || "",
+            image: getImageUrl(banner.image) || "/hm1.jpg",
+            badge: banner.badge || "New",
+            buttonText: banner.buttonText || "SHOP NOW",
+            buttonLink: banner.buttonLink || "/shop"
+          }));
+        
+        if (activeBanners.length > 0) {
+          setHeroSlides(activeBanners);
+        } else {
+          setHeroSlides(defaultSlides);
+        }
+      } catch (error) {
+        console.error("Error fetching hero banners:", error);
+        setHeroSlides(defaultSlides);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHeroBanners();
   }, []);
+
+  useEffect(() => {
+    if (heroSlides.length > 0) {
+      const timer = setInterval(() => {
+        setCurrentSlide((prev) => (prev + 1) % heroSlides.length);
+      }, 5000);
+      return () => clearInterval(timer);
+    }
+  }, [heroSlides.length]);
 
   // Animation variants
   const containerVariants = {
@@ -96,6 +145,12 @@ export default function HeroSection() {
 
   return (
     <section className="relative min-h-screen overflow-hidden bg-gradient-to-br from-slate-50 via-white to-blue-50">
+      {loading ? (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-600"></div>
+        </div>
+      ) : (
+        <>
       {/* Animated Background */}
       <div className="absolute inset-0">
         {/* Gradient Orbs */}
@@ -283,13 +338,13 @@ export default function HeroSection() {
               variants={itemVariants}
               className="flex flex-wrap gap-3 md:gap-4"
             >
-              <Link to="/shop">
+              <Link to={heroSlides[currentSlide]?.buttonLink || "/shop"}>
                 <motion.button
                   className="group relative bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 md:px-8 md:py-4 rounded-full font-bold flex items-center gap-2 md:gap-3 overflow-hidden shadow-2xl text-sm md:text-base"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <span className="relative z-10">Shop Now</span>
+                  <span className="relative z-10">{heroSlides[currentSlide]?.buttonText || "Shop Now"}</span>
                   <motion.div
                     className="relative z-10"
                     animate={{ x: [0, 5, 0] }}
@@ -492,6 +547,8 @@ export default function HeroSection() {
           </motion.div>
         </div>
       </motion.div>
+      </>
+      )}
     </section>
   );
 }

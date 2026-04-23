@@ -6,20 +6,20 @@ import { toggleWishlist } from "../store/wishlistSlice";
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from "framer-motion";
 import { allProducts } from "../data/products";
-// eslint-disable-next-line no-unused-vars
-import slide1 from "../assets/cor1.jpg";
-// eslint-disable-next-line no-unused-vars
-import slide2 from "../assets/cor2.jpg";
-// eslint-disable-next-line no-unused-vars
-import slide3 from "../assets/cor3.jpg";
+import axios from "axios";
+import { API_ENDPOINTS, getImageUrl } from "../config/api";
+
 
 // Hero Slider Component
 function HeroSlider() {
   const [current, setCurrent] = useState(0);
   const [imageLoaded, setImageLoaded] = useState({});
+  const [slides, setSlides] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
-  const slides = [
+  // Default slides as fallback
+  const defaultSlides = [
     {
       img: "https://pngimg.com/d/clock_PNG6606.png",
       badge: "EXTRA 20% OFF",
@@ -27,6 +27,7 @@ function HeroSlider() {
       title: "Premium Wall Clocks",
       description: "Discover elegant wall clocks that add style to your home. Quality craftsmanship at the best prices.",
       cta: "SHOP NOW",
+      ctaLink: "/shop?filter=wall-clock",
       bgColor: "bg-gradient-to-br from-red-50 via-orange-50 to-amber-50",
       imagePosition: "right"
     },
@@ -37,6 +38,7 @@ function HeroSlider() {
       title: "Stylish Table Clocks",
       description: "Explore our newest table clock designs. Perfect for your desk, bedside, or any tabletop.",
       cta: "SHOP NOW",
+      ctaLink: "/shop?filter=table-clock",
       bgColor: "bg-gradient-to-br from-gray-50 via-slate-50 to-zinc-50",
       imagePosition: "left"
     },
@@ -47,17 +49,65 @@ function HeroSlider() {
       title: "Modern Wall Clocks",
       description: "Transform your space with our designer wall clocks. Contemporary designs for modern homes.",
       cta: "SHOP NOW",
+      ctaLink: "/shop?filter=designer",
       bgColor: "bg-gradient-to-br from-red-50 via-pink-50 to-rose-50",
       imagePosition: "right"
     }
   ];
 
+  // Fetch hero banners from API
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrent((prev) => (prev + 1) % slides.length);
-    }, 5000);
-    return () => clearInterval(timer);
+    const fetchHeroBanners = async () => {
+      try {
+        setLoading(true);
+        console.log('Fetching hero banners from:', API_ENDPOINTS.publicHeroBanners);
+        const response = await axios.get(API_ENDPOINTS.publicHeroBanners);
+        console.log('Hero banners response:', response.data);
+        
+        const banners = response.data.banners || [];
+        
+        if (banners.length > 0) {
+          // Map API banners to slides format - use stored bgColor and imagePosition
+          const apiSlides = banners.map((banner, index) => ({
+            img: getImageUrl(banner.image),
+            badge: banner.badge || "NEW",
+            subtitle: banner.subtitle || "",
+            title: banner.title,
+            description: banner.description || "",
+            cta: banner.buttonText || "SHOP NOW",
+            ctaLink: banner.buttonLink || "/shop",
+            bgColor: banner.bgColor || (index % 3 === 0
+              ? "bg-gradient-to-br from-red-50 via-orange-50 to-amber-50"
+              : index % 3 === 1
+              ? "bg-gradient-to-br from-gray-50 via-slate-50 to-zinc-50"
+              : "bg-gradient-to-br from-red-50 via-pink-50 to-rose-50"),
+            imagePosition: banner.imagePosition || (index % 2 === 0 ? "right" : "left")
+          }));
+          setSlides(apiSlides);
+        } else {
+          // Use default slides if no banners in API
+          setSlides(defaultSlides);
+        }
+      } catch (error) {
+        console.error("Error fetching hero banners:", error);
+        // Fallback to default slides on error
+        setSlides(defaultSlides);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchHeroBanners();
   }, []);
+
+  useEffect(() => {
+    if (slides.length > 0) {
+      const timer = setInterval(() => {
+        setCurrent((prev) => (prev + 1) % slides.length);
+      }, 5000);
+      return () => clearInterval(timer);
+    }
+  }, [slides.length]);
 
   // Preload images
   useEffect(() => {
@@ -68,7 +118,15 @@ function HeroSlider() {
         setImageLoaded(prev => ({ ...prev, [index]: true }));
       };
     });
-  }, []);
+  }, [slides]);
+
+  if (loading || slides.length === 0) {
+    return (
+      <div className="relative w-full h-[400px] bg-gradient-to-br from-red-50 via-orange-50 to-amber-50 flex items-center justify-center">
+        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-[#cc0000]"></div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative w-full overflow-hidden">
@@ -229,7 +287,7 @@ function HeroSlider() {
                   }}
                 >
                   <motion.button
-                    onClick={() => navigate("/shop")}
+                    onClick={() => navigate(slides[current].ctaLink || "/shop")}
                     className="bg-[#cc0000] text-white px-5 sm:px-6 md:px-8 py-2 sm:py-2.5 md:py-3 text-xs sm:text-sm md:text-base font-bold tracking-wide uppercase hover:bg-[#b30000] transition-all duration-300 shadow-lg rounded inline-flex items-center gap-2 group relative overflow-hidden"
                     whileHover={{ 
                       scale: 1.05,
@@ -504,7 +562,15 @@ function DealCountdown() {
 function PromoBanner({ image, badge, title, subtitle, link, size = "normal" }) {
   const navigate = useNavigate();
   const [isHovered, setIsHovered] = useState(false);
-  
+
+  const heightClass = {
+    large:  "h-[350px] md:h-[450px]",
+    wide:   "h-[160px] md:h-[200px]",
+    normal: "h-[170px] md:h-[220px]",
+    medium: "h-[170px] md:h-[220px]",
+    small:  "h-[170px] md:h-[220px]",
+  }[size] || "h-[170px] md:h-[220px]";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -514,9 +580,7 @@ function PromoBanner({ image, badge, title, subtitle, link, size = "normal" }) {
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
       onClick={() => navigate(link)}
-      className={`relative overflow-hidden cursor-pointer group rounded-2xl shadow-lg transition-all duration-500 bg-gray-900 w-full ${
-        size === "large" ? "h-[350px] md:h-[450px]" : "h-[170px] md:h-[220px]"
-      }`}
+      className={`relative overflow-hidden cursor-pointer group rounded-2xl shadow-lg transition-all duration-500 bg-gray-900 w-full ${heightClass}`}
       style={{
         transformStyle: 'preserve-3d',
         perspective: '1000px'
@@ -721,9 +785,9 @@ function ProductCard({ product, showCountdown = false }) {
     return () => clearInterval(timer);
   }, [showCountdown]);
 
-  const discount = product.old_price 
-    ? Math.round(((parseInt(product.old_price.replace(/[^\d]/g, "")) - parseInt(product.price.replace(/[^\d]/g, ""))) / parseInt(product.old_price.replace(/[^\d]/g, ""))) * 100)
-    : 0;
+  const priceNum = parseInt(String(product.price || "0").replace(/[^\d]/g, "")) || 0;
+  const oldPriceNum = parseInt(String(product.old_price || "0").replace(/[^\d]/g, "")) || 0;
+  const discount = oldPriceNum > priceNum ? Math.round(((oldPriceNum - priceNum) / oldPriceNum) * 100) : 0;
 
   return (
     <motion.div
@@ -774,7 +838,7 @@ function ProductCard({ product, showCountdown = false }) {
       )}
 
       {/* Product Image */}
-      <div className="relative aspect-square overflow-hidden bg-gray-50" onClick={() => navigate(`/product/${card.id}`)}>
+      <div className="relative aspect-square overflow-hidden bg-gray-50" onClick={() => navigate(`/product/${product.id}`)}>
         <motion.img
           src={product.img}
           alt={product.title}
@@ -1002,8 +1066,109 @@ function FeatureIcon({ icon, title, description }) {
 
 export default function HomeNew() {
   const navigate = useNavigate();
-  const featuredProducts = allProducts.slice(0, 8);
-  const dealProduct = allProducts[0];
+
+  // API state
+  const [categoryBanners, setCategoryBanners] = useState([]);
+  const [featuredProducts, setFeaturedProducts] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  // Fetch category banners from API
+  useEffect(() => {
+    const fetchCategoryBanners = async () => {
+      try {
+        const response = await axios.get(API_ENDPOINTS.publicCategoryBanners);
+        const banners = response.data.banners || [];
+        setCategoryBanners(banners);
+      } catch (error) {
+        console.error("Error fetching category banners:", error);
+        setCategoryBanners([]);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+    fetchCategoryBanners();
+  }, []);
+
+  // Fetch featured products from API
+  useEffect(() => {
+    const fetchFeaturedProducts = async () => {
+      try {
+        // First try to get admin-curated featured products
+        const response = await axios.get(API_ENDPOINTS.publicFeaturedProducts);
+        const products = response.data.products || [];
+
+        if (products.length > 0) {
+          // Normalize API product fields to match ProductCard expectations
+          const normalized = products.map(p => ({
+            id: p._id,
+            title: p.ProductName || p.productname || p.title || "Product",
+            price: p.Price ? `₹${p.Price}` : (p.price || "₹0"),
+            old_price: p.MRP && p.MRP !== p.Price ? `₹${p.MRP}` : null,
+            img: p.Image1
+              ? `http://192.168.1.27:4000/product/${p.Image1}`
+              : (p.img || "/hm1.jpg"),
+            category: p.ProductType || p.producttype || p.category || "",
+          }));
+          setFeaturedProducts(normalized);
+        } else {
+          // Fallback: fetch latest products from public API
+          const pubResponse = await axios.get(API_ENDPOINTS.publicProducts, {
+            params: { page: 1, limit: 8 }
+          });
+          const pubProducts = pubResponse.data.products || [];
+          if (pubProducts.length > 0) {
+            const normalized = pubProducts.map(p => ({
+              id: p._id,
+              title: p.productname || "Product",
+              price: p.price ? `₹${p.price}` : "₹0",
+              old_price: p.MRP && p.MRP !== p.price ? `₹${p.MRP}` : null,
+              img: p.Image1
+                ? `http://192.168.1.27:4000/product/${p.Image1}`
+                : "/hm1.jpg",
+              category: p.producttype || "",
+            }));
+            setFeaturedProducts(normalized);
+          } else {
+            setFeaturedProducts(allProducts.slice(0, 8));
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching featured products:", error);
+        setFeaturedProducts(allProducts.slice(0, 8));
+      } finally {
+        setLoadingProducts(false);
+      }
+    };
+    fetchFeaturedProducts();
+  }, []);
+
+  // Static fallback category banners
+  const staticCategoryBanners = [
+    { _id: "1", image: "/hm1.jpg", badge: "SALE UP TO 30% OFF", name: "Wall Clocks", subtitle: "Premium Collection", link: "/shop?filter=wall-clock", size: "large" },
+    { _id: "2", image: "/hm2.webp", badge: "NEW ARRIVALS", name: "Table Clocks", subtitle: "Elegant Designs", link: "/shop?filter=table-clock", size: "normal" },
+    { _id: "3", image: "/handtorches.webp", badge: "FROM ₹300", name: "Hand Torches", subtitle: "Portable", link: "/shop?filter=hand-torch", size: "medium" },
+    { _id: "4", image: "/hm5.webp", badge: "₹230", name: "LED Lights", subtitle: "Emergency", link: "/shop?filter=led-light", size: "small" },
+    { _id: "5", image: "/hm3.jpg", badge: "TRENDING", name: "Designer Clocks", subtitle: "Modern Style", link: "/shop?filter=designer", size: "normal" },
+    { _id: "6", image: "/hm4.jpg", badge: "BEST SELLER", name: "Classic Clocks", subtitle: "Timeless Beauty", link: "/shop?filter=classic", size: "normal" },
+  ];
+
+  const displayBanners = categoryBanners.length > 0 ? categoryBanners : staticCategoryBanners;
+
+  // Map banner size to grid col-span classes
+  const getSizeClasses = (size) => {
+    switch (size) {
+      case "large":   return "col-span-2 md:col-span-2 lg:col-span-3 lg:row-span-2";
+      case "wide":    return "col-span-2 md:col-span-4 lg:col-span-6";
+      case "normal":  return "col-span-2 md:col-span-2 lg:col-span-3";
+      case "medium":  return "col-span-1 md:col-span-2 lg:col-span-2";
+      case "small":   return "col-span-1 md:col-span-1 lg:col-span-1";
+      default:        return "col-span-2 md:col-span-2 lg:col-span-3";
+    }
+  };
+
+  const displayFeatured = featuredProducts.length > 0 ? featuredProducts : allProducts.slice(0, 8);
+  const dealProduct = displayFeatured[0] || allProducts[0];
 
   return (
     <div className="w-full bg-white">
@@ -1051,75 +1216,33 @@ export default function HomeNew() {
             ></motion.div>
           </motion.div>
 
-          {/* Unique Asymmetric Grid */}
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
-            {/* Wall Clocks - Hero (3x3 on large) */}
-            <div className="col-span-2 md:col-span-2 lg:col-span-3 lg:row-span-2">
-              <PromoBanner
-                image="/hm1.jpg"
-                badge="SALE UP TO 30% OFF"
-                title="Wall Clocks"
-                subtitle="Premium Collection"
-                link="/shop?filter=wall-clock"
-                size="large"
-              />
+          {/* Dynamic Category Banners Grid */}
+          {loadingCategories ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+              {[...Array(6)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`${i === 0 ? "col-span-2 lg:col-span-3 lg:row-span-2" : "col-span-2 lg:col-span-3"} rounded-2xl bg-gray-200 animate-pulse`}
+                  style={{ minHeight: i === 0 ? 350 : 170 }}
+                />
+              ))}
             </div>
-            
-            {/* Table Clocks (3x1 on large) */}
-            <div className="col-span-2 md:col-span-2 lg:col-span-3">
-              <PromoBanner
-                image="/hm2.webp"
-                badge="NEW ARRIVALS"
-                title="Table Clocks"
-                subtitle="Elegant Designs"
-                link="/shop?filter=table-clock"
-              />
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2.5">
+              {displayBanners.map((banner, index) => (
+                <div key={banner._id || index} className={getSizeClasses(banner.size)}>
+                  <PromoBanner
+                    image={getImageUrl(banner.image)}
+                    badge={banner.badge}
+                    title={banner.name}
+                    subtitle={banner.subtitle}
+                    link={banner.link}
+                    size={banner.size || "normal"}
+                  />
+                </div>
+              ))}
             </div>
-
-            {/* Hand Torches (1.5x1) */}
-            <div className="col-span-1 md:col-span-1 lg:col-span-2">
-              <PromoBanner
-                image="/handtorches.webp"
-                badge="FROM ₹300"
-                title="Hand Torches"
-                subtitle="Portable"
-                link="/shop?filter=hand-torch"
-              />
-            </div>
-
-            {/* LED Lights (1.5x1) */}
-            <div className="col-span-1 md:col-span-1 lg:col-span-1">
-              <PromoBanner
-                image="/hm5.webp"
-                badge="₹230"
-                title="LED Lights"
-                subtitle="Emergency"
-                link="/shop?filter=led-light"
-              />
-            </div>
-
-            {/* Designer Clocks (2x1) */}
-            <div className="col-span-2 md:col-span-2 lg:col-span-3">
-              <PromoBanner
-                image="/hm3.jpg"
-                badge="TRENDING"
-                title="Designer Clocks"
-                subtitle="Modern Style"
-                link="/shop?filter=designer"
-              />
-            </div>
-
-            {/* Classic Clocks (2x1) */}
-            <div className="col-span-2 md:col-span-2 lg:col-span-3">
-              <PromoBanner
-                image="/hm4.jpg"
-                badge="BEST SELLER"
-                title="Classic Clocks"
-                subtitle="Timeless Beauty"
-                link="/shop?filter=classic"
-              />
-            </div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -1142,15 +1265,23 @@ export default function HomeNew() {
           </motion.div>
 
           {/* Mobile: 2 columns, Desktop: 4 columns Grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-            {featuredProducts.map((product, index) => (
-              <ProductCard 
-                key={product.id} 
-                product={product} 
-                showCountdown={index === 0 || index === 4}
-              />
-            ))}
-          </div>
+          {loadingProducts ? (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="rounded-xl bg-gray-200 animate-pulse" style={{ height: 280 }} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+              {displayFeatured.map((product, index) => (
+                <ProductCard
+                  key={product._id || product.id}
+                  product={product}
+                  showCountdown={index === 0 || index === 4}
+                />
+              ))}
+            </div>
+          )}
 
           <div className="text-center mt-14">
             <motion.button

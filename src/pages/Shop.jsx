@@ -5,6 +5,8 @@ import { addToCart, removeFromCart } from "../store/cartSlice";
 import { toggleWishlist } from "../store/wishlistSlice";
 import { allProducts } from "../data/products";
 import { LifestyleCard } from "../components/LifestyleCards";
+import axios from "axios";
+import { API_ENDPOINTS } from "../config/api";
 
 function ListCard({ card }) {
   const navigate = useNavigate();
@@ -115,23 +117,6 @@ function ListCard({ card }) {
   );
 }
 
-const categories = [
-  { name: "All Categories", value: "All", count: 0 },
-  { name: "Hand Torch", value: "Hand Torch", count: 0 },
-  { name: "Emergency Light", value: "Emergency Light", count: 0 },
-  { name: "Clock", value: "Clock", count: 0 },
-  { name: "Clock Accessory", value: "Clock Accessory", count: 0 },
-  { name: "Alarm Clock", value: "Alarm Clock", count: 0 },
-  { name: "Calculator", value: "Calculator", count: 0 },
-  { name: "LED", value: "LED", count: 0 },
-  { name: "Home Appliance", value: "Home Appliance", count: 0 },
-  { name: "Electric Mosquito Racket", value: "Electric Mosquito Racket", count: 0 },
-  { name: "Room Heater", value: "Room Heater", count: 0 },
-  { name: "Iron", value: "Iron", count: 0 },
-  { name: "Electric Kettle", value: "Electric Kettle", count: 0 },
-  { name: "Kitchen Appliance", value: "Kitchen Appliance", count: 0 },
-];
-
 const sortOptions = [
   { label: "Default Sorting", value: "Featured" },
   { label: "Price: Low to High", value: "Price: Low to High" },
@@ -149,23 +134,75 @@ export default function Shop() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [categorySearch, setCategorySearch] = useState("");
   const [showMoreCategories, setShowMoreCategories] = useState(false);
-  const [priceRange, setPriceRange] = useState([0, 10000]);
+  const [priceRange, setPriceRange] = useState([0, 100000]);
   const [selectedRatings, setSelectedRatings] = useState([]);
   const [activeFilters, setActiveFilters] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(12);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
-  // Calculate category counts
+  // API products state — null means not yet loaded / API failed
+  const [apiProducts, setApiProducts] = useState(null);
+  const [loadingProducts, setLoadingProducts] = useState(true);
+
+  // Fetch products from public API (only showOnWebsite = true)
   useEffect(() => {
-    categories.forEach(cat => {
-      if (cat.value === "All") {
-        cat.count = allProducts.length;
-      } else {
-        cat.count = allProducts.filter(p => p.category === cat.value).length;
+    const fetchProducts = async () => {
+      try {
+        setLoadingProducts(true);
+        const response = await axios.get(API_ENDPOINTS.publicProducts, {
+          params: { limit: 500 }
+        });
+        const products = response.data.products || [];
+        // Normalize API product fields to match existing card structure
+        const normalized = products.map(p => ({
+          id: p._id,
+          title: p.productname || "Product",
+          price: p.price != null ? `₹${Math.round(p.price)}` : null,
+          old_price: p.old_price != null ? `₹${Math.round(p.old_price)}` : null,
+          tag: p.tag || null,
+          soldOut: p.soldOut || false,
+          category: p.producttype || "",
+          colour: p.colour || null,
+          description: p.description || "",
+          features: Array.isArray(p.features) ? p.features : [],
+          specs: p.specs || {},
+          sku: p.sku || p.hsn || "",
+          discount: p.discount || 0,
+          img: p.Image1 ? `http://192.168.1.27:4000/product/${p.Image1}` : "/hm1.jpg",
+          hoverImg: p.Image1 ? `http://192.168.1.27:4000/product/${p.Image1}` : "/hm1.jpg",
+          images: p.images?.length
+            ? p.images.map(img => `http://192.168.1.27:4000/product/${img}`)
+            : [p.Image1 ? `http://192.168.1.27:4000/product/${p.Image1}` : "/hm1.jpg"],
+        }));
+        setApiProducts(normalized);
+      } catch (error) {
+        console.error("Error fetching products:", error);
+        // Only fall back to static if API completely fails (network error)
+        setApiProducts(null);
+      } finally {
+        setLoadingProducts(false);
       }
-    });
+    };
+    fetchProducts();
   }, []);
+
+  // null = API failed (use static fallback), [] = API returned 0 visible products, [...] = API products
+  const sourceProducts = apiProducts === null ? allProducts : apiProducts;
+
+  // Build dynamic categories from actual API products
+  const categories = [
+    { name: "All Categories", value: "All", count: sourceProducts.length },
+    ...Array.from(
+      sourceProducts.reduce((map, p) => {
+        const cat = p.category?.trim();
+        if (cat) map.set(cat, (map.get(cat) || 0) + 1);
+        return map;
+      }, new Map())
+    )
+      .sort((a, b) => b[1] - a[1]) // sort by count descending
+      .map(([value, count]) => ({ name: value, value, count }))
+  ];
 
   useEffect(() => {
     setActiveCategory("All");
@@ -187,7 +224,7 @@ export default function Shop() {
     if (urlSearch) {
       filters.push({ type: "search", label: `Search: "${urlSearch}"`, value: urlSearch });
     }
-    if (priceRange[0] > 0 || priceRange[1] < 10000) {
+    if (priceRange[0] > 0 || priceRange[1] < 100000) {
       filters.push({ type: "price", label: `₹${priceRange[0]} - ₹${priceRange[1]}`, value: priceRange });
     }
     if (selectedRatings.length > 0) {
@@ -269,7 +306,7 @@ export default function Shop() {
     "kitchen-appliance": ["Kitchen Appliance"],
   };
 
-  let filtered = allProducts;
+  let filtered = sourceProducts;
 
   // URL search query
   if (urlSearch) {
@@ -292,8 +329,9 @@ export default function Shop() {
     filtered = filtered.filter(p => p.category === activeCategory);
   }
 
-  // Price range filter
+  // Price range filter — skip products with no price
   filtered = filtered.filter(p => {
+    if (!p.price) return true; // no price = always show
     const price = parseInt((p.price || "0").replace(/[^\d]/g, ""));
     return price >= priceRange[0] && price <= priceRange[1];
   });
@@ -319,7 +357,7 @@ export default function Shop() {
     if (filter.type === "category") {
       setActiveCategory("All");
     } else if (filter.type === "price") {
-      setPriceRange([0, 10000]);
+      setPriceRange([0, 100000]);
     } else if (filter.type === "rating") {
       setSelectedRatings([]);
     }
@@ -328,7 +366,7 @@ export default function Shop() {
   const clearAllFilters = () => {
     setActiveCategory("All");
     setCategorySearch("");
-    setPriceRange([0, 10000]);
+    setPriceRange([0, 100000]);
     setSelectedRatings([]);
   };
 
@@ -561,8 +599,8 @@ export default function Shop() {
                 <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                   <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
                     <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Price Range</h3>
-                    {(priceRange[0] > 0 || priceRange[1] < 10000) && (
-                      <button onClick={() => setPriceRange([0, 10000])} className="text-xs text-[#cc0000] font-semibold hover:underline">Reset</button>
+                    {(priceRange[0] > 0 || priceRange[1] < 100000) && (
+                      <button onClick={() => setPriceRange([0, 100000])} className="text-xs text-[#cc0000] font-semibold hover:underline">Reset</button>
                     )}
                   </div>
                   <div className="p-4 space-y-4">
@@ -714,8 +752,8 @@ export default function Shop() {
               <div className="bg-white border border-gray-200 rounded-xl overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 bg-gray-50">
                   <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wide">Price Range</h3>
-                  {(priceRange[0] > 0 || priceRange[1] < 10000) && (
-                    <button onClick={() => setPriceRange([0, 10000])} className="text-xs text-[#cc0000] font-semibold hover:underline">Reset</button>
+                  {(priceRange[0] > 0 || priceRange[1] < 100000) && (
+                    <button onClick={() => setPriceRange([0, 100000])} className="text-xs text-[#cc0000] font-semibold hover:underline">Reset</button>
                   )}
                 </div>
                 <div className="p-4 space-y-4">
@@ -933,7 +971,13 @@ export default function Shop() {
             </div>
 
             {/* Products Grid / List */}
-            {viewMode === 'grid' ? (
+            {loadingProducts ? (
+              <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="rounded-xl bg-gray-200 animate-pulse" style={{ height: 280 }} />
+                ))}
+              </div>
+            ) : viewMode === 'grid' ? (
               /* Mobile: 2 columns, Desktop: 3 columns Grid */
               <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
                 {currentProducts.map((p) => (

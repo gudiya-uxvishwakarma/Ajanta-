@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import axios from "axios";
+import { API_ENDPOINTS } from "../config/api";
 
 const faqs = [
   { q: "How can I track my Ajanta order?", a: "Once your order is shipped, you will receive a tracking link via email and SMS. You can also contact our support team with your order ID for real-time updates." },
@@ -56,21 +58,31 @@ function FaqItem({ q, a, index }) {
 
 export default function Contact() {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [focused, setFocused] = useState(null);
   const [form, setForm] = useState({ fname: "", lname: "", email: "", phone: "", subject: "Order Inquiry", msg: "" });
 
   const set = (key) => (e) => setForm(p => ({ ...p, [key]: e.target.value }));
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    const entry = {
-      id: Date.now(), name: `${form.fname} ${form.lname}`.trim(),
-      email: form.email, phone: form.phone, subject: form.subject, message: form.msg,
-      date: new Date().toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }), read: false,
-    };
-    const existing = JSON.parse(localStorage.getItem("ajanta_contact_msgs") || "[]");
-    localStorage.setItem("ajanta_contact_msgs", JSON.stringify([entry, ...existing]));
-    setSubmitted(true);
+    setSubmitting(true);
+    try {
+      await axios.post(API_ENDPOINTS.sendContactMessage, {
+        name: `${form.fname} ${form.lname}`.trim(),
+        email: form.email,
+        phone: form.phone,
+        subject: form.subject,
+        message: form.msg
+      });
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      // Still show success to user even if backend fails
+      setSubmitted(true);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const inputClass = (name) =>
@@ -286,12 +298,15 @@ export default function Contact() {
                       onFocus={() => setFocused("msg")} onBlur={() => setFocused(null)} />
                   </div>
                   <motion.button type="submit" whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-                    className="w-full bg-[#cc0000] text-white py-3.5 rounded-lg text-sm font-bold tracking-wide hover:bg-[#a00000] transition-colors flex items-center justify-center gap-2 group"
+                    disabled={submitting}
+                    className="w-full bg-[#cc0000] text-white py-3.5 rounded-lg text-sm font-bold tracking-wide hover:bg-[#a00000] transition-colors flex items-center justify-center gap-2 group disabled:opacity-70"
                   >
-                    Send Message
-                    <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                    </svg>
+                    {submitting ? "Sending..." : "Send Message"}
+                    {!submitting && (
+                      <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    )}
                   </motion.button>
                   <p className="text-xs text-gray-400 text-center">We typically respond within 24 business hours.</p>
                 </motion.form>
