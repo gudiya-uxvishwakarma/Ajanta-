@@ -1,25 +1,21 @@
 import { Link } from "react-router-dom";
+import { useWebsiteSettings } from "../hooks/useWebsiteSettings";
 
 const quickLinks = [
   { label: "Home", to: "/" },
   { label: "Shop All", to: "/shop" },
-  { label: "Men's Collection", to: "/mens" },
-  { label: "Women's Collection", to: "/womens" },
   { label: "About Brand", to: "/about" },
-  { label: "Blog", to: "/Blog" },
   { label: "Contact Us", to: "/contact" },
 ];
 
 const careLinks = [
-  "Track Your Order", "Return & Exchange", "Warranty Policy",
-  "Shipping Policy", "Privacy Policy", "Terms & Conditions", "FAQs"
-];
-
-const contactInfo = [
-  { icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z", label: "Address", text: "Ajanta Quartz Pvt. Ltd., Mumbai, Maharashtra, India" },
-  { icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z", label: "Email", text: "support@ajantaquartz.com" },
-  { icon: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z", label: "Phone", text: "+91 98765 43210" },
-  { icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", label: "Hours", text: "Mon – Sat, 10:00 AM – 6:00 PM IST" },
+  { label: "Track Your Order", to: "/track-order" },
+  { label: "Return & Exchange", to: "/return-exchange" },
+  { label: "Warranty Policy", to: "/warranty-policy" },
+  { label: "Shipping Policy", to: "/shipping-policy" },
+  { label: "Privacy Policy", to: "/privacy-policy" },
+  { label: "Terms & Conditions", to: "/terms-conditions" },
+  { label: "FAQs", to: "/faqs" },
 ];
 
 const socials = [
@@ -30,8 +26,16 @@ const socials = [
 ];
 
 export default function Footer() {
-  return (
-    <footer className="w-full relative overflow-hidden bg-white">
+  const { settings } = useWebsiteSettings();
+
+  const contactInfo = [
+    { icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z", label: "Address", text: "Ajanta Quartz Pvt. Ltd., Mumbai, Maharashtra, India" },
+    { icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z", label: "Email", text: settings.contactEmail },
+    { icon: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z", label: "Phone", text: settings.contactPhone },
+    { icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", label: "Hours", text: "Mon – Sat, 10:00 AM – 6:00 PM IST" },
+  ];
+
+  return (    <footer className="w-full relative overflow-hidden bg-white">
       {/* Decorative Background Elements */}
       <div className="absolute inset-0 opacity-5">
         <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-[#cc0000] to-red-400 rounded-full blur-3xl"></div>
@@ -83,11 +87,11 @@ export default function Footer() {
         <div className="md:col-span-2 flex flex-col gap-2">
           <p className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#cc0000] pb-4 border-b-2 border-[#cc0000]/20">Customer Care</p>
           {careLinks.map(l => (
-            <a key={l} href="#"
+            <Link key={l.label} to={l.to}
               className="text-gray-600 text-[14px] hover:text-[#cc0000] transition-all duration-200 flex items-center gap-2 group py-2 hover:translate-x-1">
               <span className="w-1.5 h-1.5 rounded-full bg-[#cc0000] opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
-              {l}
-            </a>
+              {l.label}
+            </Link>
           ))}
         </div>
 

@@ -1,7 +1,7 @@
 // API Configuration for Ajanta Website
 
-export const API_BASE_URL = 'http://192.168.1.27:4000/api/admin';
-export const IMAGE_BASE_URL = 'http://192.168.1.27:4000'; // For serving images
+export const API_BASE_URL = 'https://ajantaworld.in/api/admin';
+export const IMAGE_BASE_URL = 'https://ajantaworld.in'; // For serving images
 
 // Admin ID - Get this from your admin panel localStorage
 // To find it: Open admin panel → F12 → Console → Type: JSON.parse(localStorage.getItem("sub-admin"))._id

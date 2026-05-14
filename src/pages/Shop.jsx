@@ -7,6 +7,7 @@ import { allProducts } from "../data/products";
 import { LifestyleCard } from "../components/LifestyleCards";
 import axios from "axios";
 import { API_ENDPOINTS } from "../config/api";
+import SEOHead from "../components/SEOHead";
 
 function ListCard({ card }) {
   const navigate = useNavigate();
@@ -128,6 +129,7 @@ export default function Shop() {
   const [searchParams] = useSearchParams();
   const urlFilter = searchParams.get("filter") || null;
   const urlSearch = searchParams.get("search") || null;
+  const urlCategory = searchParams.get("category") || null; // Add category parameter
   const [activeCategory, setActiveCategory] = useState("All");
   const [sortBy, setSortBy] = useState("Featured");
   const [viewMode, setViewMode] = useState("grid"); // grid or list
@@ -169,11 +171,11 @@ export default function Shop() {
           specs: p.specs || {},
           sku: p.sku || p.hsn || "",
           discount: p.discount || 0,
-          img: p.Image1 ? `http://192.168.1.27:4000/product/${p.Image1}` : "/hm1.jpg",
-          hoverImg: p.Image1 ? `http://192.168.1.27:4000/product/${p.Image1}` : "/hm1.jpg",
+          img: p.Image1 ? `https://ajantaworld.in/product/${p.Image1}` : "/hm1.jpg",
+          hoverImg: p.Image1 ? `https://ajantaworld.in/product/${p.Image1}` : "/hm1.jpg",
           images: p.images?.length
-            ? p.images.map(img => `http://192.168.1.27:4000/product/${img}`)
-            : [p.Image1 ? `http://192.168.1.27:4000/product/${p.Image1}` : "/hm1.jpg"],
+            ? p.images.map(img => `https://ajantaworld.in/product/${img}`)
+            : [p.Image1 ? `https://ajantaworld.in/product/${p.Image1}` : "/hm1.jpg"],
         }));
         setApiProducts(normalized);
       } catch (error) {
@@ -324,6 +326,11 @@ export default function Shop() {
     filtered = filtered.filter(p => urlCategoryMap[urlFilter].includes(p.category));
   }
 
+  // URL category parameter (from category drawer)
+  if (urlCategory) {
+    filtered = filtered.filter(p => p.category === urlCategory);
+  }
+
   // Active category pill (if still shown)
   if (activeCategory !== "All") {
     filtered = filtered.filter(p => p.category === activeCategory);
@@ -332,7 +339,7 @@ export default function Shop() {
   // Price range filter — skip products with no price
   filtered = filtered.filter(p => {
     if (!p.price) return true; // no price = always show
-    const price = parseInt((p.price || "0").replace(/[^\d]/g, ""));
+    const price = parseInt(String(p.price || "0").replace(/[^\d]/g, ""));
     return price >= priceRange[0] && price <= priceRange[1];
   });
 
@@ -346,9 +353,9 @@ export default function Shop() {
 
   // Sort
   if (sortBy === "Price: Low to High") {
-    filtered = [...filtered].sort((a, b) => parseInt((a.price || "0").replace(/[^\d]/g, "")) - parseInt((b.price || "0").replace(/[^\d]/g, "")));
+    filtered = [...filtered].sort((a, b) => parseInt(String(a.price || "0").replace(/[^\d]/g, "")) - parseInt(String(b.price || "0").replace(/[^\d]/g, "")));
   } else if (sortBy === "Price: High to Low") {
-    filtered = [...filtered].sort((a, b) => parseInt((b.price || "0").replace(/[^\d]/g, "")) - parseInt((a.price || "0").replace(/[^\d]/g, "")));
+    filtered = [...filtered].sort((a, b) => parseInt(String(b.price || "0").replace(/[^\d]/g, "")) - parseInt(String(a.price || "0").replace(/[^\d]/g, "")));
   } else if (sortBy === "Newest") {
     filtered = [...filtered].reverse();
   }
@@ -424,6 +431,7 @@ export default function Shop() {
   };
 
   const pageTitle = urlSearch ? `Search: "${urlSearch}"`
+    : urlCategory ? urlCategory
     : urlFilter === "hand-torch"        ? "Hand Torches"
     : urlFilter === "emergency-light"   ? "Emergency Lights"
     : urlFilter === "clock"             ? "Clocks"
@@ -440,6 +448,13 @@ export default function Shop() {
 
   return (
     <div className="w-full bg-white min-h-screen">
+      <SEOHead
+        title={`${pageTitle} | Shop Ajanta Products`}
+        description={`Shop ${pageTitle} from Ajanta Associates, Bangalore. Best prices on Ajanta clocks, fans, LED lights and home appliances. Fast delivery across India.`}
+        keywords={`${pageTitle}, Ajanta shop, buy Ajanta products Bangalore, Ajanta online store`}
+        canonical={`https://ajantaworld.in/shop${urlFilter ? `?filter=${urlFilter}` : urlCategory ? `?category=${urlCategory}` : ''}`}
+      />
+
       {/* Breadcrumb Header */}
       <div className="w-full bg-[#fafafa] border-b border-gray-200 py-12 px-6 md:px-14 relative overflow-hidden">
         {/* Decorative curved lines - left top */}

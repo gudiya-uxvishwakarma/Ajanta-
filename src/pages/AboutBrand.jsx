@@ -1,6 +1,14 @@
+import SEOHead from "../components/SEOHead";
+
 export default function AboutBrand() {
   return (
     <div className="w-full bg-white min-h-screen">
+      <SEOHead
+        title="About Ajanta Associates | Our Story & Legacy"
+        description="Learn about Ajanta Associates – Bangalore's trusted Ajanta dealer since 1971. Discover our commitment to quality clocks, fans, LED lights and home appliances."
+        keywords="about Ajanta Associates, Ajanta history, Ajanta Bangalore, Ajanta clock dealer"
+        canonical="https://ajantaworld.in/about"
+      />
 
       {/* HERO BANNER */}
       <section className="relative w-full h-[90vh] overflow-hidden">

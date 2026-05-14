@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { allProducts } from "../data/products";
 import axios from "axios";
 import { API_ENDPOINTS, getImageUrl } from "../config/api";
+import { useWebsiteSettings } from "../hooks/useWebsiteSettings";
+import SEOHead from "../components/SEOHead";
 
 
 // Hero Slider Component
@@ -1066,6 +1068,7 @@ function FeatureIcon({ icon, title, description }) {
 
 export default function HomeNew() {
   const navigate = useNavigate();
+  const { settings } = useWebsiteSettings();
 
   // API state
   const [categoryBanners, setCategoryBanners] = useState([]);
@@ -1106,7 +1109,7 @@ export default function HomeNew() {
             price: p.Price ? `₹${p.Price}` : (p.price || "₹0"),
             old_price: p.MRP && p.MRP !== p.Price ? `₹${p.MRP}` : null,
             img: p.Image1
-              ? `http://192.168.1.27:4000/product/${p.Image1}`
+              ? `https://ajantaworld.in/product/${p.Image1}`
               : (p.img || "/hm1.jpg"),
             category: p.ProductType || p.producttype || p.category || "",
           }));
@@ -1124,7 +1127,7 @@ export default function HomeNew() {
               price: p.price ? `₹${p.price}` : "₹0",
               old_price: p.MRP && p.MRP !== p.price ? `₹${p.MRP}` : null,
               img: p.Image1
-                ? `http://192.168.1.27:4000/product/${p.Image1}`
+                ? `https://ajantaworld.in/product/${p.Image1}`
                 : "/hm1.jpg",
               category: p.producttype || "",
             }));
@@ -1172,6 +1175,23 @@ export default function HomeNew() {
 
   return (
     <div className="w-full bg-white">
+      <SEOHead
+        title="Ajanta Associates | Clocks, Fans & Lighting in Bangalore"
+        description="Shop Ajanta clocks, wall clocks, fans, LED lights, torches and home appliances online. Bangalore's trusted Ajanta dealer – fast delivery across India."
+        keywords="Ajanta clocks Bangalore, wall clocks online, Ajanta Associates, buy clocks Bangalore, LED lights Bangalore, Ajanta fans, home appliances Bangalore"
+        canonical="https://ajantaworld.in/"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Ajanta Associates",
+          "url": "https://ajantaworld.in",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://ajantaworld.in/shop?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }}
+      />
       {/* Hero Slider */}
       <HeroSlider />
 
@@ -1534,7 +1554,7 @@ export default function HomeNew() {
                 </svg>
               }
               title="Top-notch Support"
-              description="support@ajantaquartz.com"
+              description={settings.contactEmail}
             />
             <FeatureIcon
               icon={

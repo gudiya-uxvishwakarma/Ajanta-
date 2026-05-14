@@ -9,6 +9,7 @@ import { MdLocalShipping, MdLock, MdVerifiedUser, MdReplay, MdTrendingUp, MdRemo
 import { FaTruck, FaShieldAlt, FaUndo, FaAward } from "react-icons/fa";
 import axios from "axios";
 import { API_ENDPOINTS } from "../config/api";
+import SEOHead from "../components/SEOHead";
 
 const initialReviews = [
   { name: "Rahul Sharma", date: "08/05/2025", rating: 4, text: "Best gift! Look great, value for money, quality best." },
@@ -104,7 +105,7 @@ export default function ProductDetail() {
           params: { search: id, limit: 1 }
         });
         // Try to find by _id
-        const allRes = await axios.get(`http://192.168.1.27:4000/api/admin/getPublicProducts?limit=200`);
+        const allRes = await axios.get(`https://ajantaworld.in/api/admin/getPublicProducts?limit=200`);
         const found = allRes.data.products?.find(p => p._id === id);
         if (found) {
           // Normalize API product to match ProductDetail expectations
@@ -126,9 +127,9 @@ export default function ProductDetail() {
             features: Array.isArray(found.features) ? found.features : [],
             specs: specsObj,
             images: found.images?.length
-              ? found.images.map(img => `http://192.168.1.27:4000/product/${img}`)
-              : [`http://192.168.1.27:4000/product/${found.Image1}`],
-            img: `http://192.168.1.27:4000/product/${found.Image1}`,
+              ? found.images.map(img => `https://ajantaworld.in/product/${img}`)
+              : [`https://ajantaworld.in/product/${found.Image1}`],
+            img: `https://ajantaworld.in/product/${found.Image1}`,
           });
         }
       } catch (error) {
@@ -225,6 +226,35 @@ export default function ProductDetail() {
 
   return (
     <div className="w-full bg-white min-h-screen">
+      <SEOHead
+        title={`${product.title} | Ajanta Associates`}
+        description={product.description
+          ? `${product.description.replace(/<[^>]+>/g, '').slice(0, 150)}…`
+          : `Buy ${product.title} online at Ajanta Associates, Bangalore. Best price, fast delivery across India.`}
+        keywords={`${product.title}, ${product.category}, Ajanta ${product.category}, buy ${product.category} Bangalore`}
+        canonical={`https://ajantaworld.in/product/${product.id}`}
+        image={product.img}
+        type="product"
+        schema={{
+          "@context": "https://schema.org",
+          "@type": "Product",
+          "name": product.title,
+          "image": product.img,
+          "description": product.description?.replace(/<[^>]+>/g, '') || product.title,
+          "sku": product.sku,
+          "brand": { "@type": "Brand", "name": "Ajanta" },
+          "offers": {
+            "@type": "Offer",
+            "url": `https://ajantaworld.in/product/${product.id}`,
+            "priceCurrency": "INR",
+            "price": String(product.price || "").replace(/[^\d.]/g, '') || "0",
+            "availability": product.soldOut
+              ? "https://schema.org/OutOfStock"
+              : "https://schema.org/InStock",
+            "seller": { "@type": "Organization", "name": "Ajanta Associates" }
+          }
+        }}
+      />
 
       {/* Breadcrumb */}
       <div className="w-full bg-[#fafafa] border-b border-gray-100">

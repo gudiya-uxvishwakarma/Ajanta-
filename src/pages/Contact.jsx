@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import axios from "axios";
 import { API_ENDPOINTS } from "../config/api";
+import { useWebsiteSettings } from "../hooks/useWebsiteSettings";
+import SEOHead from "../components/SEOHead";
 
 const faqs = [
   { q: "How can I track my Ajanta order?", a: "Once your order is shipped, you will receive a tracking link via email and SMS. You can also contact our support team with your order ID for real-time updates." },
@@ -57,6 +59,7 @@ function FaqItem({ q, a, index }) {
 }
 
 export default function Contact() {
+  const { settings } = useWebsiteSettings();
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [focused, setFocused] = useState(null);
@@ -92,6 +95,12 @@ export default function Contact() {
 
   return (
     <div className="w-full bg-white min-h-screen">
+      <SEOHead
+        title="Contact Ajanta Associates | Bangalore Clock & Lighting Store"
+        description="Get in touch with Ajanta Associates, Bangalore. Call, email or visit us for Ajanta clocks, fans, LED lights and home appliances. Fast response guaranteed."
+        keywords="contact Ajanta Associates, Ajanta Bangalore contact, Ajanta clock store Bangalore"
+        canonical="https://ajantaworld.in/contact"
+      />
 
       {/* HERO */}
       <div className="relative w-full h-80 md:h-[420px] overflow-hidden">
@@ -124,13 +133,13 @@ export default function Contact() {
               We are here to help. Reach out and we will respond within 24 hours.
             </p>
             <div className="flex items-center gap-4 flex-wrap">
-              <a href="tel:+919876543210" className="flex items-center gap-2 bg-[#cc0000] text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-[#a00000] transition-colors">
+              <a href={`tel:${settings.contactPhone}`} className="flex items-center gap-2 bg-[#cc0000] text-white px-5 py-2.5 rounded-full text-sm font-bold hover:bg-[#a00000] transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                 </svg>
                 Call Now
               </a>
-              <a href="mailto:support@ajantaquartz.com" className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-full text-sm font-bold hover:border-[#cc0000] hover:text-[#cc0000] transition-colors">
+              <a href={`mailto:${settings.contactEmail}`} className="flex items-center gap-2 bg-white border border-gray-200 text-gray-700 px-5 py-2.5 rounded-full text-sm font-bold hover:border-[#cc0000] hover:text-[#cc0000] transition-colors">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
@@ -179,8 +188,8 @@ export default function Contact() {
           </motion.div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             {[
-              { icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z", label: "Email Us", value: "support@ajantaquartz.com", href: "mailto:support@ajantaquartz.com", img: "/hma1.png" },
-              { icon: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z", label: "Call Us", value: "+91 98765 43210", href: "tel:+919876543210", img: "/hma2.jpg" },
+              { icon: "M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z", label: "Email Us", value: settings.contactEmail, href: `mailto:${settings.contactEmail}`, img: "/hma1.png" },
+              { icon: "M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z", label: "Call Us", value: settings.contactPhone, href: `tel:${settings.contactPhone}`, img: "/hma2.jpg" },
               { icon: "M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z", label: "Visit Us", value: "Mumbai, Maharashtra", href: null, img: "/hma4.jpg" },
               { icon: "M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z", label: "Working Hours", value: "Mon-Sat, 10AM-6PM IST", href: null, img: "/hma5.jpg" },
             ].map(({ icon, label, value, href, img }, i) => (

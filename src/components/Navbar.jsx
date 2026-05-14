@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import { removeFromCart, addToCart, updateQuantity } from '../store/cartSlice';
 import { toggleWishlist } from '../store/wishlistSlice';
+import { useAuth } from '../context/AuthContext';
 import { 
   FiShoppingCart, FiHeart, FiMenu, FiX, FiSearch, FiUser, FiPhone, 
   FiMapPin, FiChevronDown, FiPackage, FiCreditCard, FiGift, 
@@ -12,13 +13,15 @@ import {
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { MdAdd, MdRemove } from 'react-icons/md';
-import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
+import { useWebsiteSettings } from '../hooks/useWebsiteSettings';
+import CategoryMegaMenu from './CategoryDrawer';
 
 export default function Navbar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
   const location = useLocation();
+  const { user, logout } = useAuth();
   
   // Redux selectors
   const cartItems = useSelector(state => state.cart.items);
@@ -26,13 +29,8 @@ export default function Navbar() {
   const wishlistItems = useSelector(state => state.wishlist.items);
   const wishlistCount = useSelector(state => state.wishlist.totalCount);
   
-  // Website settings state
-  const [websiteSettings, setWebsiteSettings] = useState({
-    websiteTitle: 'Ajanta',
-    contactEmail: 'info@ajanta.com',
-    contactPhone: '+91 9876543210',
-    freeShippingThreshold: 999
-  });
+  // Website settings from shared hook
+  const { settings: websiteSettings } = useWebsiteSettings();
   
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -48,42 +46,12 @@ export default function Navbar() {
   const categoriesRef = useRef(null);
   const navbarRef = useRef(null);
 
-  // Fetch website settings
+  // Update document title when settings load
   useEffect(() => {
-    const fetchWebsiteSettings = async () => {
-      try {
-        console.log('Fetching website settings from:', API_ENDPOINTS.publicWebsiteSettings);
-        const response = await axios.get(API_ENDPOINTS.publicWebsiteSettings);
-        console.log('Website settings response:', response.data);
-        const settings = response.data.settings || {};
-        const newSettings = {
-          websiteTitle: settings.websiteTitle || 'Ajanta',
-          contactEmail: settings.contactEmail || 'info@ajanta.com',
-          contactPhone: settings.contactPhone || '+91 9876543210',
-          freeShippingThreshold: settings.freeShippingThreshold || 999
-        };
-        console.log('Setting website settings to:', newSettings);
-        setWebsiteSettings(newSettings);
-        
-        // Update document title
-        if (settings.websiteTitle) {
-          document.title = settings.websiteTitle;
-        }
-      } catch (error) {
-        console.error("Error fetching website settings:", error);
-        console.error("Error details:", error.response?.data || error.message);
-        // Set defaults on error
-        setWebsiteSettings({
-          websiteTitle: 'Ajanta',
-          contactEmail: 'info@ajanta.com',
-          contactPhone: '+91 9876543210',
-          freeShippingThreshold: 999
-        });
-      }
-    };
-
-    fetchWebsiteSettings();
-  }, []);
+    if (websiteSettings.websiteTitle) {
+      document.title = websiteSettings.websiteTitle;
+    }
+  }, [websiteSettings.websiteTitle]);
 
   // Update button positions when dropdowns open
   const updateButtonPosition = (ref, type) => {
@@ -292,33 +260,28 @@ export default function Navbar() {
   };
 
   const cartTotal = cartItems.reduce((sum, item) => {
-    const price = parseFloat((item.price || "0").replace(/[^0-9.-]+/g, ''));
+    const price = parseFloat(String(item.price || "0").replace(/[^0-9.-]+/g, ''));
     return sum + (price * item.qty);
   }, 0);
 
   return (
-    <nav className="sticky top-0 z-50 bg-white">
-      {/* Top Bar - Hides on scroll */}
-      <div 
-        className={`bg-[#cc0000] hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
-          isScrolled ? 'h-0 opacity-0 pointer-events-none' : 'h-10 opacity-100'
-        }`}
-        style={{ willChange: isScrolled ? 'auto' : 'height, opacity' }}
-      >
+    <div className="sticky top-0 z-50">
+      {/* Top Notification Bar - hides on scroll on all screens */}
+      <div className={`bg-[#cc0000] transition-all duration-300 ease-in-out overflow-hidden ${isScrolled ? 'h-0 opacity-0 pointer-events-none' : 'h-8 lg:h-10 opacity-100'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-          <div className="flex items-center justify-between h-full text-xs">
-            <div className="flex items-center space-x-6 text-white">
-              <a href={`tel:${websiteSettings.contactPhone}`} className="flex items-center space-x-1 hover:text-white/80 transition-colors">
+          <div className="flex items-center justify-center lg:justify-between h-full text-xs">
+            <div className="flex items-center space-x-2 lg:space-x-6 text-white">
+              <a href={`tel:${websiteSettings.contactPhone}`} className="hidden lg:flex items-center space-x-1 hover:text-white/80 transition-colors">
                 <FiPhone className="w-3.5 h-3.5" />
                 <span>{websiteSettings.contactPhone}</span>
               </a>
-              <span className="text-white/40">|</span>
+              <span className="hidden lg:inline text-white/40">|</span>
               <span className="flex items-center space-x-1">
                 <span className="inline-block w-1.5 h-1.5 bg-white rounded-full"></span>
                 <span>Free Shipping on Orders Above <span className="font-bold">₹{websiteSettings.freeShippingThreshold}</span></span>
               </span>
             </div>
-            <div className="flex items-center space-x-4 text-white">
+            <div className="hidden lg:flex items-center space-x-4 text-white">
               <a href={`mailto:${websiteSettings.contactEmail}`} className="flex items-center space-x-1 hover:text-white/80 transition-colors">
                 <span>{websiteSettings.contactEmail}</span>
               </a>
@@ -327,9 +290,10 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Main Navbar - Logo Section (Hides on scroll) */}
+    <nav className="bg-white shadow-sm">
+      {/* Main Navbar - Logo Section (Desktop only, hides on scroll) */}
       <div 
-        className={`bg-white border-b border-gray-200 transition-all duration-300 ease-in-out overflow-hidden ${
+        className={`bg-white border-b border-gray-200 transition-all duration-300 ease-in-out overflow-hidden hidden lg:block ${
           isScrolled ? 'h-0 opacity-0 pointer-events-none' : 'h-20 opacity-100'
         }`}
         style={{ willChange: isScrolled ? 'auto' : 'height, opacity' }}
@@ -652,137 +616,119 @@ export default function Navbar() {
                   >
                       <div className="p-4 bg-gray-50 border-b border-gray-200">
                         <div className="flex items-center space-x-3">
-                          <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                            <FiUser className="w-6 h-6 text-gray-600" />
+                          <div className="w-12 h-12 bg-[#cc0000]/10 rounded-full flex items-center justify-center">
+                            <FiUser className="w-6 h-6 text-[#cc0000]" />
                           </div>
                           <div>
-                            <p className="font-semibold text-gray-900">Guest User</p>
-                            <p className="text-xs text-gray-500">guest@ajanta.com</p>
+                            <p className="font-semibold text-gray-900">{user ? user.name : 'Guest'}</p>
+                            <p className="text-xs text-gray-500">{user ? user.email : 'Not signed in'}</p>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="p-2">
-                        <Link
-                          to="/account"
-                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
-                          onClick={() => setIsAccountOpen(false)}
-                        >
-                          <FiUser className="w-5 h-5 text-gray-600" />
-                          <span className="text-sm font-medium text-gray-700">My Account</span>
-                        </Link>
-                        <Link
-                          to="/orders"
-                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
-                          onClick={() => setIsAccountOpen(false)}
-                        >
-                          <FiPackage className="w-5 h-5 text-gray-600" />
-                          <span className="text-sm font-medium text-gray-700">My Orders</span>
-                        </Link>
-                        <Link
-                          to="/wallet"
-                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
-                          onClick={() => setIsAccountOpen(false)}
-                        >
-                          <FiCreditCard className="w-5 h-5 text-gray-600" />
-                          <span className="text-sm font-medium text-gray-700">My Wallet</span>
-                        </Link>
-                        <Link
-                          to="/checkout"
-                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
-                          onClick={() => setIsAccountOpen(false)}
-                        >
-                          <FiHeart className="w-5 h-5 text-gray-600" />
-                          <span className="text-sm font-medium text-gray-700">Favourite Items</span>
-                        </Link>
-                        <Link
-                          to="/vouchers"
-                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
-                          onClick={() => setIsAccountOpen(false)}
-                        >
-                          <FiGift className="w-5 h-5 text-gray-600" />
-                          <span className="text-sm font-medium text-gray-700">Vouchers & Gift Cards</span>
-                        </Link>
-                        <Link
-                          to="/contact"
-                          className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors"
-                          onClick={() => setIsAccountOpen(false)}
-                        >
-                          <FiHeadphones className="w-5 h-5 text-gray-600" />
-                          <span className="text-sm font-medium text-gray-700">Service</span>
-                        </Link>
-                      </div>
-                      
-                      <div className="p-2 border-t border-gray-200">
-                        <button className="flex items-center space-x-3 px-4 py-3 hover:bg-red-50 rounded-lg transition-colors w-full text-left">
-                          <FiLogOut className="w-5 h-5 text-[#cc0000]" />
-                          <span className="text-sm font-medium text-[#cc0000]">Sign Out</span>
-                        </button>
-                      </div>
+                      {user ? (
+                        <>
+                          <div className="p-2">
+                            <Link to="/account" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                              <FiUser className="w-5 h-5 text-gray-600" /><span className="text-sm font-medium text-gray-700">My Account</span>
+                            </Link>
+                            <Link to="/orders" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                              <FiPackage className="w-5 h-5 text-gray-600" /><span className="text-sm font-medium text-gray-700">My Orders</span>
+                            </Link>
+                           {/* <Link to="/wallet" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                              <FiCreditCard className="w-5 h-5 text-gray-600" /><span className="text-sm font-medium text-gray-700">My Wallet</span>
+                            </Link>
+                            <Link to="/vouchers" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                              <FiGift className="w-5 h-5 text-gray-600" /><span className="text-sm font-medium text-gray-700">Vouchers</span>
+                            </Link> */}
+                          </div>
+                          <div className="p-2 border-t border-gray-200">
+                            <button onClick={() => { logout(); setIsAccountOpen(false); navigate('/'); }} className="flex items-center space-x-3 px-4 py-3 hover:bg-red-50 rounded-lg transition-colors w-full text-left">
+                              <FiLogOut className="w-5 h-5 text-[#cc0000]" /><span className="text-sm font-medium text-[#cc0000]">Sign Out</span>
+                            </button>
+                          </div>
+                        </>
+                      ) : (
+                        <div className="p-4 space-y-2">
+                          <Link to="/login" onClick={() => setIsAccountOpen(false)} className="block w-full text-center bg-[#cc0000] text-white py-2.5 rounded-lg text-sm font-bold hover:bg-[#b30000] transition-colors">
+                            Sign In
+                          </Link>
+                          <Link to="/register" onClick={() => setIsAccountOpen(false)} className="block w-full text-center border border-gray-300 text-gray-700 py-2.5 rounded-lg text-sm font-bold hover:bg-gray-50 transition-colors">
+                            Create Account
+                          </Link>
+                        </div>
+                      )}
                     </motion.div>
                 </AnimatePresence>,
                 document.body
               )}
             </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Sticky Section - Category Bar & Compact Nav */}
+      <div 
+        ref={navbarRef}
+        className="bg-white transition-shadow duration-300"
+        style={{ willChange: 'box-shadow' }}
+      >
+        {/* Mobile Sticky Bar - always visible on mobile */}
+        <div className="lg:hidden bg-white border-b border-gray-200">
+          <div className="px-4 h-14 flex items-center justify-between">
+            {/* Mobile Logo */}
+            <Link to="/" className="flex-shrink-0">
+              <img
+                src="/Ajanta logo.png"
+                alt={websiteSettings.websiteTitle}
+                className="h-8 w-auto"
+                onError={(e) => {
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'block';
+                }}
+              />
+              <span className="hidden text-xl font-black text-[#1a1a1a]">{websiteSettings.websiteTitle}</span>
+            </Link>
 
             {/* Mobile Icons */}
-            <div className="flex lg:hidden items-center space-x-2">
-              <button className="p-2 hover:bg-gray-100 rounded-lg">
-                <FiSearch className="w-5 h-5 text-gray-700" />
-              </button>
-              
-              {/* Wishlist Icon */}
-              <button 
+            <div className="flex items-center space-x-1">
+              <button
                 onClick={() => setIsWishlistOpen(!isWishlistOpen)}
                 className="relative p-2 hover:bg-gray-100 rounded-lg"
               >
                 <FiHeart className="w-5 h-5 text-gray-700" />
                 {wishlistCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-[#cc0000] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="absolute top-0 right-0 bg-[#cc0000] text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
                     {wishlistCount}
                   </span>
                 )}
               </button>
-              
-              {/* Cart Icon */}
-              <button 
+              <button
                 onClick={() => setIsCartOpen(!isCartOpen)}
                 className="relative p-2 hover:bg-gray-100 rounded-lg"
               >
                 <FiShoppingCart className="w-5 h-5 text-gray-700" />
                 {cartCount > 0 && (
-                  <span className="absolute top-0 right-0 bg-[#cc0000] text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  <span className="absolute top-0 right-0 bg-[#cc0000] text-white text-xs font-bold rounded-full w-4 h-4 flex items-center justify-center">
                     {cartCount}
                   </span>
                 )}
               </button>
-              
-              {/* Account Icon */}
-              <button 
+              <button
                 onClick={() => setIsAccountOpen(!isAccountOpen)}
                 className="relative p-2 hover:bg-gray-100 rounded-lg"
               >
                 <FiUser className="w-5 h-5 text-gray-700" />
               </button>
-              
-              {/* Menu Toggle */}
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="p-2 hover:bg-gray-100 rounded-lg"
               >
                 {isMobileMenuOpen ? <FiX className="w-6 h-6" /> : <FiMenu className="w-6 h-6" />}
               </button>
-              </div>
             </div>
           </div>
         </div>
-
-      {/* Sticky Section - Category Bar & Compact Nav */}
-      <div 
-        ref={navbarRef}
-        className="sticky top-0 z-[200] bg-white shadow-md transition-shadow duration-300"
-        style={{ willChange: 'box-shadow' }}
-      >
         {/* Compact Navbar - Shows when scrolled */}
         <div 
           className={`border-b border-gray-200 hidden lg:block transition-all duration-300 ease-in-out overflow-hidden ${
@@ -989,41 +935,45 @@ export default function Navbar() {
                           >
                             <div className="p-4 bg-gray-50 border-b border-gray-200">
                               <div className="flex items-center space-x-3">
-                                <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                                  <FiUser className="w-6 h-6 text-gray-600" />
+                                <div className="w-12 h-12 bg-[#cc0000]/10 rounded-full flex items-center justify-center">
+                                  <FiUser className="w-6 h-6 text-[#cc0000]" />
                                 </div>
                                 <div>
-                                  <p className="font-semibold text-gray-900">Guest User</p>
-                                  <p className="text-xs text-gray-500">guest@ajanta.com</p>
+                                  <p className="font-semibold text-gray-900">{user ? user.name : 'Guest'}</p>
+                                  <p className="text-xs text-gray-500">{user ? user.email : 'Not signed in'}</p>
                                 </div>
                               </div>
                             </div>
                             
-                            <div className="p-2">
-                              <Link to="/account" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
-                                <FiUser className="w-5 h-5 text-gray-600" />
-                                <span className="text-sm font-medium text-gray-700">My Account</span>
-                              </Link>
-                              <Link to="/orders" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
-                                <FiPackage className="w-5 h-5 text-gray-600" />
-                                <span className="text-sm font-medium text-gray-700">My Orders</span>
-                              </Link>
-                              <Link to="/wallet" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
-                                <FiCreditCard className="w-5 h-5 text-gray-600" />
-                                <span className="text-sm font-medium text-gray-700">My Wallet</span>
-                              </Link>
-                              <Link to="/checkout" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
-                                <FiHeart className="w-5 h-5 text-gray-600" />
-                                <span className="text-sm font-medium text-gray-700">Favourite Items</span>
-                              </Link>
-                            </div>
-                            
-                            <div className="p-2 border-t border-gray-200">
-                              <button className="flex items-center space-x-3 px-4 py-3 hover:bg-red-50 rounded-lg transition-colors w-full text-left">
-                                <FiLogOut className="w-5 h-5 text-[#cc0000]" />
-                                <span className="text-sm font-medium text-[#cc0000]">Sign Out</span>
-                              </button>
-                            </div>
+                            {user ? (
+                              <>
+                                <div className="p-2">
+                                  <Link to="/account" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                                    <FiUser className="w-5 h-5 text-gray-600" /><span className="text-sm font-medium text-gray-700">My Account</span>
+                                  </Link>
+                                  <Link to="/orders" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                                    <FiPackage className="w-5 h-5 text-gray-600" /><span className="text-sm font-medium text-gray-700">My Orders</span>
+                                  </Link>
+                                {/*  <Link to="/wallet" className="flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                                    <FiCreditCard className="w-5 h-5 text-gray-600" /><span className="text-sm font-medium text-gray-700">My Wallet</span>
+                                  </Link>*/}
+                                </div>
+                                <div className="p-2 border-t border-gray-200">
+                                  <button onClick={() => { logout(); setIsAccountOpen(false); navigate('/'); }} className="flex items-center space-x-3 px-4 py-3 hover:bg-red-50 rounded-lg transition-colors w-full text-left">
+                                    <FiLogOut className="w-5 h-5 text-[#cc0000]" /><span className="text-sm font-medium text-[#cc0000]">Sign Out</span>
+                                  </button>
+                                </div>
+                              </>
+                            ) : (
+                              <div className="p-4 space-y-2">
+                                <Link to="/login" onClick={() => setIsAccountOpen(false)} className="block w-full text-center bg-[#cc0000] text-white py-2.5 rounded-lg text-sm font-bold hover:bg-[#b30000] transition-colors">
+                                  Sign In
+                                </Link>
+                                <Link to="/register" onClick={() => setIsAccountOpen(false)} className="block w-full text-center border border-gray-300 text-gray-700 py-2.5 rounded-lg text-sm font-bold hover:bg-gray-50 transition-colors">
+                                  Create Account
+                                </Link>
+                              </div>
+                            )}
                           </motion.div>
                         )}
                       </AnimatePresence>
@@ -1050,119 +1000,12 @@ export default function Navbar() {
                   <FiChevronDown className={`w-4 h-4 transition-transform ${isCategoriesOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {/* Mega Menu - Sidebar Style */}
-                <AnimatePresence>
-                  {isCategoriesOpen && (
-                    <>
-                      {/* Backdrop */}
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="fixed inset-0 bg-black/30 backdrop-blur-sm z-[250]"
-                        style={{ top: isScrolled ? '4rem' : '8rem' }}
-                        onClick={() => setIsCategoriesOpen(false)}
-                      />
-                      
-                      {/* Mega Menu Content */}
-                      <motion.div
-                        initial={{ opacity: 0, y: -20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -20 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute left-0 top-full bg-white shadow-2xl z-[260]"
-                        style={{ width: '1000px', left: '0' }}
-                      >
-                        <div className="flex">
-                          {/* Left Sidebar - Main Categories */}
-                          <div className="w-64 bg-gray-50 border-r border-gray-200">
-                            {categories.map((category, index) => {
-                              const IconComponent = category.icon;
-                              return (
-                                <button
-                                  key={index}
-                                  onMouseEnter={() => setHoveredCategory(index)}
-                                  onClick={() => {
-                                    setHoveredCategory(index);
-                                  }}
-                                  className={`w-full flex items-center space-x-3 px-6 py-4 text-left transition-all duration-200 border-l-4 ${
-                                    hoveredCategory === index
-                                      ? 'bg-white border-[#cc0000] text-[#cc0000]'
-                                      : 'border-transparent text-gray-700 hover:bg-white hover:text-[#cc0000]'
-                                  }`}
-                                >
-                                  <IconComponent className="w-5 h-5 flex-shrink-0" />
-                                  <span className="font-medium text-sm">{category.name}</span>
-                                  <FiChevronDown className="w-4 h-4 ml-auto -rotate-90" />
-                                </button>
-                              );
-                            })}
-                          </div>
-
-                          {/* Right Content - Subcategories */}
-                          <div className="flex-1 p-8">
-                            <AnimatePresence mode="wait">
-                              <motion.div
-                                key={hoveredCategory}
-                                initial={{ opacity: 0, x: 20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0, x: -20 }}
-                                transition={{ duration: 0.2 }}
-                              >
-                                {/* Category Title */}
-                                <div className="mb-6">
-                                  <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                                    {categories[hoveredCategory].name}
-                                  </h2>
-                                  <p className="text-sm text-gray-500">
-                                    Explore our collection of {categories[hoveredCategory].name.toLowerCase()}
-                                  </p>
-                                </div>
-
-                                {/* Subcategories Grid */}
-                                <div className="grid grid-cols-3 gap-8">
-                                  {categories[hoveredCategory].subcategories.map((subcategory, subIndex) => (
-                                    <div key={subIndex}>
-                                      <h3 className="text-sm font-bold text-gray-900 mb-3 uppercase tracking-wide">
-                                        {subcategory.title}
-                                      </h3>
-                                      <ul className="space-y-2">
-                                        {subcategory.items.map((item, itemIndex) => (
-                                          <li key={itemIndex}>
-                                            <Link
-                                              to={`/shop?filter=${item.toLowerCase().replace(/ /g, '-')}`}
-                                              className="text-sm text-gray-600 hover:text-[#cc0000] transition-colors block py-1"
-                                              onClick={() => setIsCategoriesOpen(false)}
-                                            >
-                                              {item}
-                                            </Link>
-                                          </li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                  ))}
-                                </div>
-
-                                {/* View All Link */}
-                                <div className="mt-8 pt-6 border-t border-gray-200">
-                                  <Link
-                                    to={`/shop?filter=${categories[hoveredCategory].name.toLowerCase().replace(/ /g, '-')}`}
-                                    className="inline-flex items-center space-x-2 text-[#cc0000] font-semibold hover:underline"
-                                    onClick={() => setIsCategoriesOpen(false)}
-                                  >
-                                    <span>View All {categories[hoveredCategory].name}</span>
-                                    <span>→</span>
-                                  </Link>
-                                </div>
-                              </motion.div>
-                            </AnimatePresence>
-                          </div>
-                        </div>
-                      </motion.div>
-                    </>
-                  )}
-                </AnimatePresence>
+                {/* Dynamic Mega Menu */}
+                <CategoryMegaMenu 
+                  isOpen={isCategoriesOpen} 
+                  onClose={() => setIsCategoriesOpen(false)}
+                  isScrolled={isScrolled}
+                />
               </div>
 
               {navLinks.map((link) => (
@@ -1187,13 +1030,14 @@ export default function Navbar() {
         <AnimatePresence>
           {isMobileMenuOpen && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="lg:hidden border-t border-gray-200 overflow-hidden"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden fixed left-0 right-0 bg-white border-t border-gray-200 shadow-xl z-40"
+              style={{ top: '56px' }}
             >
               <div className="p-4 space-y-2">
-                {/* Navigation Links */}
                 {navLinks.map((link) => (
                   <Link
                     key={link.path}
@@ -1214,10 +1058,12 @@ export default function Navbar() {
         <AnimatePresence>
           {isWishlistOpen && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="lg:hidden border-t border-gray-200 overflow-hidden bg-white"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden fixed left-0 right-0 bg-white border-t border-gray-200 shadow-xl z-40 max-h-[80vh] overflow-y-auto"
+              style={{ top: '56px' }}
             >
               <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -1286,10 +1132,12 @@ export default function Navbar() {
         <AnimatePresence>
           {isCartOpen && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="lg:hidden border-t border-gray-200 overflow-hidden bg-white"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden fixed left-0 right-0 bg-white border-t border-gray-200 shadow-xl z-40 max-h-[80vh] overflow-y-auto"
+              style={{ top: '56px' }}
             >
               <div className="p-4">
                 <div className="flex items-center justify-between mb-3">
@@ -1394,85 +1242,59 @@ export default function Navbar() {
         <AnimatePresence>
           {isAccountOpen && (
             <motion.div
-              initial={{ height: 0, opacity: 0 }}
-              animate={{ height: 'auto', opacity: 1 }}
-              exit={{ height: 0, opacity: 0 }}
-              className="lg:hidden border-t border-gray-200 overflow-hidden bg-white"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.2 }}
+              className="lg:hidden fixed left-0 right-0 bg-white border-t border-gray-200 shadow-xl z-40 max-h-[80vh] overflow-y-auto"
+              style={{ top: '56px' }}
             >
               <div className="p-4">
                 <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg mb-3">
-                  <div className="w-12 h-12 bg-gray-300 rounded-full flex items-center justify-center">
-                    <FiUser className="w-6 h-6 text-gray-600" />
+                  <div className="w-12 h-12 bg-[#cc0000]/10 rounded-full flex items-center justify-center">
+                    <FiUser className="w-6 h-6 text-[#cc0000]" />
                   </div>
                   <div>
-                    <p className="font-semibold text-gray-900">Guest User</p>
-                    <p className="text-xs text-gray-500">guest@ajanta.com</p>
+                    <p className="font-semibold text-gray-900">{user ? user.name : 'Guest'}</p>
+                    <p className="text-xs text-gray-500">{user ? user.email : 'Not signed in'}</p>
                   </div>
                 </div>
-                
-                <div className="space-y-1">
-                  <Link
-                    to="/account"
-                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors"
-                    onClick={() => setIsAccountOpen(false)}
-                  >
-                    <FiUser className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">My Account</span>
-                  </Link>
-                  <Link
-                    to="/orders"
-                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors"
-                    onClick={() => setIsAccountOpen(false)}
-                  >
-                    <FiPackage className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">My Orders</span>
-                  </Link>
-                  <Link
-                    to="/wallet"
-                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors"
-                    onClick={() => setIsAccountOpen(false)}
-                  >
-                    <FiCreditCard className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">My Wallet</span>
-                  </Link>
-                  <Link
-                    to="/checkout"
-                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors"
-                    onClick={() => setIsAccountOpen(false)}
-                  >
-                    <FiHeart className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">Favourite Items</span>
-                  </Link>
-                  <Link
-                    to="/vouchers"
-                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors"
-                    onClick={() => setIsAccountOpen(false)}
-                  >
-                    <FiGift className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">Vouchers & Gift Cards</span>
-                  </Link>
-                  <Link
-                    to="/contact"
-                    className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors"
-                    onClick={() => setIsAccountOpen(false)}
-                  >
-                    <FiHeadphones className="w-5 h-5 text-gray-600" />
-                    <span className="text-sm font-medium text-gray-700">Service</span>
-                  </Link>
-                  <div className="h-px bg-gray-200 my-2"></div>
-                  <button 
-                    className="flex items-center space-x-3 px-3 py-3 hover:bg-red-50 rounded-lg transition-colors w-full text-left"
-                    onClick={() => setIsAccountOpen(false)}
-                  >
-                    <FiLogOut className="w-5 h-5 text-[#cc0000]" />
-                    <span className="text-sm font-medium text-[#cc0000]">Sign Out</span>
-                  </button>
-                </div>
+
+                {user ? (
+                  <div className="space-y-1">
+                    <Link to="/account" className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                      <FiUser className="w-5 h-5 text-gray-600" /><span className="text-sm font-medium text-gray-700">My Account</span>
+                    </Link>
+                    <Link to="/orders" className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                      <FiPackage className="w-5 h-5 text-gray-600" /><span className="text-sm font-medium text-gray-700">My Orders</span>
+                    </Link>
+                    {/*<Link to="/wallet" className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                      <FiCreditCard className="w-5 h-5 text-gray-600" /><span className="text-sm font-medium text-gray-700">My Wallet</span>
+                    </Link>
+                    <Link to="/vouchers" className="flex items-center space-x-3 px-3 py-3 hover:bg-gray-50 rounded-lg transition-colors" onClick={() => setIsAccountOpen(false)}>
+                      <FiGift className="w-5 h-5 text-gray-600" /><span className="text-sm font-medium text-gray-700">Vouchers</span>
+                    </Link>*/}
+                    <div className="h-px bg-gray-200 my-2"></div>
+                    <button onClick={() => { logout(); setIsAccountOpen(false); navigate('/'); }} className="flex items-center space-x-3 px-3 py-3 hover:bg-red-50 rounded-lg transition-colors w-full text-left">
+                      <FiLogOut className="w-5 h-5 text-[#cc0000]" /><span className="text-sm font-medium text-[#cc0000]">Sign Out</span>
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2 pt-1">
+                    <Link to="/login" onClick={() => setIsAccountOpen(false)} className="block w-full text-center bg-[#cc0000] text-white py-3 rounded-xl text-sm font-bold hover:bg-[#b30000] transition-colors">
+                      Sign In
+                    </Link>
+                    <Link to="/register" onClick={() => setIsAccountOpen(false)} className="block w-full text-center border border-gray-300 text-gray-700 py-3 rounded-xl text-sm font-bold hover:bg-gray-50 transition-colors">
+                      Create Account
+                    </Link>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
     </nav>
+    </div>
   );
 }

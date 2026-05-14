@@ -7,6 +7,8 @@ import {
 } from 'react-icons/fi';
 import axios from 'axios';
 import { API_ENDPOINTS } from '../config/api';
+import Invoice from '../components/Invoice';
+import SEOHead from '../components/SEOHead';
 
 export default function Orders() {
   const [activeFilter, setActiveFilter] = useState('all');
@@ -14,6 +16,7 @@ export default function Orders() {
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState(localStorage.getItem("ajanta_customer_email") || "");
   const [emailInput, setEmailInput] = useState("");
+  const [showInvoice, setShowInvoice] = useState(null);
 
   const fetchOrders = async (customerEmail) => {
     if (!customerEmail) return;
@@ -25,6 +28,12 @@ export default function Orders() {
         date: o.createdAt,
         status: o.status || "processing",
         total: o.totalAmount || 0,
+        // Customer & shipping details for invoice
+        customerName: o.customerName || "",
+        customerEmail: o.customerEmail || "",
+        customerPhone: o.customerPhone || "",
+        shippingAddress: o.shippingAddress || {},
+        paymentMethod: o.paymentMethod || "cod",
         items: (o.items || []).map(item => ({
           id: item.productId,
           title: item.productName,
@@ -104,7 +113,12 @@ export default function Orders() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      <SEOHead title="My Orders" noIndex={true} />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Invoice Modal */}
+        {showInvoice && (
+          <Invoice order={showInvoice} onClose={() => setShowInvoice(null)} />
+        )}
         {/* Page Header */}
         <div className="mb-8">
           <Link to="/account" className="text-[#cc0000] hover:underline mb-2 inline-block">
@@ -229,6 +243,13 @@ export default function Orders() {
                                 <span>Return</span>
                               </button>
                             )}
+                            <button
+                              onClick={() => setShowInvoice(order)}
+                              className="flex items-center space-x-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                            >
+                              <FiDownload className="w-4 h-4" />
+                              <span>Invoice</span>
+                            </button>
                           </div>
                         </div>
                       </div>

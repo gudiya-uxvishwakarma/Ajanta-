@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const AuthContext = createContext(null);
 
-const API_BASE = 'http://192.168.1.27:4000/api/user';
+const API_BASE = 'https://ajantaworld.in/api/user';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
